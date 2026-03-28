@@ -66,8 +66,7 @@ TrelloPowerUp.initialize({
             return t.modal({
               title: 'New Time Entry',
               url: url,
-              height: 300,
-              accentColor: '#091e420f'
+              height: 300
             });
           });
         }
@@ -97,7 +96,6 @@ TrelloPowerUp.initialize({
                 title: 'New Time Entry',
                 url: url,
                 height: 300,
-                accentColor: '#091e420f'
               });
             });
           }
