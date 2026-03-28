@@ -1,7 +1,8 @@
 var BADGE_CACHE = {};
 var CACHE_TTL = 120000; // 2 minutes
-var ICON_URL = './img/harvest-logo-orange.svg';
-var ICON_WHITE_URL = './img/harvest-logo-white.svg';
+var BASE_URL = 'https://chfe.github.io/harvest-trello-powerup';
+var ICON_URL = BASE_URL + '/img/harvest-logo-orange.svg';
+var ICON_WHITE_URL = BASE_URL + '/img/harvest-logo-white.svg';
 
 TrelloPowerUp.initialize({
   'card-badges': function(t) {
