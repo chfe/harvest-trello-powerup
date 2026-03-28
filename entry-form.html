@@ -184,7 +184,7 @@
           status.textContent = isEdit ? 'Updated!' : 'Created!';
           setTimeout(function() {
             t.set('card', 'shared', 'harvestLastUpdated', Date.now())
-              .then(function() { t.closePopup(); });
+              .then(function() { t.closeModal(); });
           }, 800);
         }).catch(function(err) {
           status.className = 'status error';
@@ -205,7 +205,7 @@
             status.textContent = 'Deleted!';
             setTimeout(function() {
               t.set('card', 'shared', 'harvestLastUpdated', Date.now())
-                .then(function() { t.closePopup(); });
+                .then(function() { t.closeModal(); });
             }, 800);
           }).catch(function(err) {
             status.className = 'status error';

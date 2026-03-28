@@ -63,10 +63,11 @@ TrelloPowerUp.initialize({
             var url = './entry-form.html?shortLink=' + encodeURIComponent(card.shortLink)
               + '&cardName=' + encodeURIComponent(card.name || '')
               + '&cardUrl=' + encodeURIComponent(card.url || '');
-            return t.popup({
+            return t.modal({
               title: 'New Time Entry',
               url: url,
-              height: 340
+              height: 300,
+              accentColor: '#fa5d00'
             });
           });
         }
@@ -92,10 +93,11 @@ TrelloPowerUp.initialize({
               var url = './entry-form.html?shortLink=' + encodeURIComponent(card.shortLink)
                 + '&cardName=' + encodeURIComponent(card.name || '')
                 + '&cardUrl=' + encodeURIComponent(card.url || '');
-              return t.popup({
+              return t.modal({
                 title: 'New Time Entry',
                 url: url,
-                height: 340
+                height: 300,
+                accentColor: '#fa5d00'
               });
             });
           }

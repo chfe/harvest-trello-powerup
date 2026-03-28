@@ -72,23 +72,23 @@
       return div.innerHTML;
     }
 
-    function openEntryForm(entryId, mouseEvent) {
+    function openEntryForm(entryId) {
       var url = './entry-form.html?shortLink=' + encodeURIComponent(currentCard.shortLink)
         + '&cardName=' + encodeURIComponent(currentCard.name || '')
         + '&cardUrl=' + encodeURIComponent(currentCard.url || '');
       if (entryId) url += '&entryId=' + entryId;
-      t.popup({
+      t.modal({
         title: entryId ? 'Edit Time Entry' : 'New Time Entry',
         url: url,
-        height: 340,
-        mouseEvent: mouseEvent
+        height: 300,
+        accentColor: '#fa5d00'
       });
     }
 
     function bindEntryClicks() {
       document.querySelectorAll('.entry[data-entry-id]').forEach(function(el) {
-        el.addEventListener('click', function(e) {
-          openEntryForm(el.getAttribute('data-entry-id'), e);
+        el.addEventListener('click', function() {
+          openEntryForm(el.getAttribute('data-entry-id'));
         });
       });
     }
