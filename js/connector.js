@@ -64,15 +64,18 @@ TrelloPowerUp.initialize({
   },
 
   'card-back-section': function(t) {
-    return {
-      title: 'Harvest Time Entries',
-      icon: '',
-      content: {
-        type: 'iframe',
-        url: t.signUrl('./card-back.html'),
-        height: 300
-      }
-    };
+    return t.get('member', 'private', 'harvestCredentials', null).then(function(creds) {
+      if (!creds || !creds.token) return [];
+      return {
+        title: 'Harvest Time Entries',
+        icon: '',
+        content: {
+          type: 'iframe',
+          url: t.signUrl('./card-back.html'),
+          height: 300
+        }
+      };
+    });
   },
 
   'board-buttons': function(t) {

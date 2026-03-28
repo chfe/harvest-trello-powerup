@@ -54,8 +54,8 @@
         var container = document.getElementById('content');
 
         if (!creds || !creds.token) {
-          container.innerHTML = '<div class="empty">Configure Harvest in board settings.</div>';
-          t.sizeTo('#content');
+          container.innerHTML = '';
+          t.sizeTo(1);
           return;
         }
 
