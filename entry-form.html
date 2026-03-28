@@ -3,6 +3,32 @@
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="https://p.trellocdn.com/power-up.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css">
+  <style>
+    /* Tom Select dark mode overrides */
+    .ts-wrapper .ts-control {
+      padding: 8px 12px; font-size: 14px; border-radius: 6px;
+      border: 1px solid var(--ds-border-input, #dfe1e6);
+      background: var(--ds-background-input, #fafbfc);
+      color: var(--ds-text, #172b4d);
+    }
+    .ts-wrapper.focus .ts-control {
+      border-color: var(--ds-border-focused, #0079bf);
+      box-shadow: 0 0 0 1px var(--ds-border-focused, #0079bf);
+    }
+    .ts-dropdown { border-radius: 6px; border: 1px solid var(--ds-border, #dfe1e6); background: var(--ds-background-overlay, #fff); }
+    .ts-dropdown .option { padding: 8px 12px; font-size: 13px; color: var(--ds-text, #172b4d); }
+    .ts-dropdown .active { background: var(--ds-background-selected, #e2e4e9); }
+    .ts-wrapper .ts-control input { color: var(--ds-text, #172b4d); }
+
+    @media (prefers-color-scheme: dark) {
+      .ts-wrapper .ts-control { background: var(--ds-background-input, #22272b); color: var(--ds-text, #b6c2cf); border-color: var(--ds-border-input, #3d474f); }
+      .ts-dropdown { background: var(--ds-background-overlay, #282e33); border-color: var(--ds-border, #3d474f); }
+      .ts-dropdown .option { color: var(--ds-text, #b6c2cf); }
+      .ts-dropdown .active { background: var(--ds-background-selected, #3d474f); }
+      .ts-wrapper .ts-control input { color: var(--ds-text, #b6c2cf); }
+    }
+  </style>
   <style>
     body { margin: 0; padding: 0; }
     .form { padding: 12px 20px; }
@@ -55,6 +81,7 @@
     .no-project { padding: 20px; text-align: center; font-size: 13px; color: var(--ds-text-subtlest, #5e6c84); }
   </style>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
   <script src="js/harvest-api.js"></script>
 </head>
 <body>
@@ -183,21 +210,26 @@
       html += '</div>';
 
       container.innerHTML = html;
-      setTimeout(function() { document.getElementById('hours').focus(); document.getElementById('hours').select(); }, 100);
+
+      // Init Tom Select on dropdowns
+      var projectSelect = new TomSelect('#project_id', { maxOptions: null });
+      var taskSelect = new TomSelect('#task_id', { maxOptions: null });
+
+      setTimeout(function() { document.getElementById('hours').focus(); document.getElementById('hours').select(); }, 150);
 
       // Project change → reload tasks
-      document.getElementById('project_id').addEventListener('change', function() {
-        var newProjectId = this.value;
-        var taskSelect = document.getElementById('task_id');
-        taskSelect.innerHTML = '<option>Loading…</option>';
+      projectSelect.on('change', function(newProjectId) {
+        taskSelect.clear();
+        taskSelect.clearOptions();
+        taskSelect.addOption({ value: '', text: 'Loading…' });
+        taskSelect.refreshOptions(false);
         HarvestAPI.getTaskAssignments(creds.token, creds.accountId, newProjectId).then(function(newTasks) {
-          taskSelect.innerHTML = '';
+          taskSelect.clearOptions();
           newTasks.forEach(function(task) {
-            var opt = document.createElement('option');
-            opt.value = task.id;
-            opt.textContent = task.name;
-            taskSelect.appendChild(opt);
+            taskSelect.addOption({ value: task.id, text: task.name });
           });
+          if (newTasks.length > 0) taskSelect.setValue(newTasks[0].id);
+          taskSelect.refreshOptions(false);
         });
       });
 
