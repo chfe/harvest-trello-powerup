@@ -5,57 +5,58 @@
   <link rel="stylesheet" href="https://p.trellocdn.com/power-up.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.min.css">
   <style>
-    /* Tom Select overrides — load base CSS for layout, override all visuals */
+    /* Tom Select visual overrides (loaded after tom-select.css, no !important needed) */
     .ts-wrapper .ts-control,
     .ts-wrapper .ts-control input {
-      background: var(--ds-background-input, #22272b) !important;
-      color: var(--ds-text, #b6c2cf) !important;
+      background: var(--ds-background-input, #22272b);
+      color: var(--ds-text, #b6c2cf);
     }
     .ts-wrapper .ts-control {
-      padding: 8px 12px !important;
-      font-size: 14px !important;
-      border: 1px solid var(--ds-border-input, #3d474f) !important;
-      border-radius: 6px !important;
-      box-shadow: none !important;
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid var(--ds-border-input, #3d474f);
+      border-radius: 6px;
+      box-shadow: none;
       cursor: pointer;
     }
     .ts-wrapper.focus .ts-control {
-      border-color: var(--ds-border-focused, #579dff) !important;
-      box-shadow: 0 0 0 1px var(--ds-border-focused, #579dff) !important;
+      border-color: var(--ds-border-focused, #579dff);
+      box-shadow: 0 0 0 1px var(--ds-border-focused, #579dff);
     }
     .ts-wrapper .ts-control > .item {
-      color: var(--ds-text, #b6c2cf) !important;
+      color: var(--ds-text, #b6c2cf);
     }
     .ts-wrapper .ts-control input::placeholder {
-      color: var(--ds-text-subtlest, #5e6c84) !important;
+      color: var(--ds-text-subtlest, #5e6c84);
     }
     .ts-dropdown {
-      background: var(--ds-background-overlay, #282e33) !important;
-      border: 1px solid var(--ds-border, #3d474f) !important;
-      border-radius: 6px !important;
-      margin-top: 2px !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+      background: var(--ds-background-overlay, #282e33);
+      border: 1px solid var(--ds-border, #3d474f);
+      border-radius: 6px;
+      margin-top: 2px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     .ts-dropdown .ts-dropdown-content {
       max-height: 200px;
     }
     .ts-dropdown .option {
-      padding: 8px 12px !important;
+      padding: 8px 12px;
       font-size: 13px;
-      color: var(--ds-text, #b6c2cf) !important;
-      background: transparent !important;
+      color: var(--ds-text, #b6c2cf);
+      background: transparent;
     }
     .ts-dropdown .option:hover,
     .ts-dropdown .option.active {
-      background: var(--ds-background-neutral-hovered, #3d474f) !important;
-      color: #fff !important;
+      background: var(--ds-background-neutral-hovered, #3d474f);
+      color: #fff;
     }
     .ts-dropdown .option .highlight {
       background: rgba(87, 157, 255, 0.25);
       border-radius: 2px;
     }
     .ts-dropdown .no-results {
-      padding: 8px 12px; font-size: 13px;
+      padding: 8px 12px;
+      font-size: 13px;
       color: var(--ds-text-subtlest, #5e6c84);
     }
   </style>
