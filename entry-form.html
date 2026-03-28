@@ -67,6 +67,10 @@
     var t = TrelloPowerUp.iframe();
     var container = document.getElementById('content');
 
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') t.closeModal();
+    });
+
     var params = new URLSearchParams(window.location.search);
     var entryId = params.get('entryId');
     var isEdit = !!entryId;
