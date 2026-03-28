@@ -6,9 +6,15 @@
   <style>
     body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
+    .section { padding: 8px 12px; }
+    .section-title { font-size: 11px; font-weight: 600; color: var(--ds-text-subtlest, #5e6c84); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .section select { width: 100%; padding: 6px 8px; font-size: 13px; margin-bottom: 6px; border: 1px solid var(--ds-border-input, #dfe1e6); border-radius: 3px; background: var(--ds-background-input, #fafbfc); color: var(--ds-text, #172b4d); }
+
+    .divider { height: 1px; background: var(--ds-border, #dfe1e6); margin: 0 12px; }
+
     .header {
       display: flex; align-items: center; gap: 8px;
-      padding: 12px 12px 8px;
+      padding: 8px 12px;
     }
     .header img { width: 20px; height: 20px; }
     .header .project-name { font-size: 14px; font-weight: 600; color: var(--ds-text, #172b4d); }
@@ -16,7 +22,7 @@
 
     .stats {
       display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-      padding: 8px 12px 12px;
+      padding: 8px 12px;
     }
     .stat-card {
       background: var(--ds-background-neutral, #f4f5f7); border-radius: 8px;
@@ -33,42 +39,27 @@
     .stat-card.total .value { color: var(--ds-text-information, #0052cc); }
     .stat-card.total { background: var(--ds-background-information, #deebff); }
 
-    .divider { height: 1px; background: var(--ds-border, #dfe1e6); margin: 0 12px; }
-
-    .breakdown { padding: 12px; }
-    .breakdown-title { font-size: 11px; font-weight: 600; color: var(--ds-text-subtlest, #5e6c84); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .breakdown { padding: 8px 12px; }
     .breakdown-row {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 4px 0; font-size: 13px;
+      padding: 3px 0; font-size: 13px;
     }
     .breakdown-row .label { color: var(--ds-text-subtle, #5e6c84); }
     .breakdown-row .value { font-weight: 600; color: var(--ds-text, #172b4d); }
 
-    .actions { padding: 8px 12px 12px; }
-    .btn-settings {
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      width: 100%; padding: 6px; border: 1px solid var(--ds-border, #dfe1e6);
-      border-radius: 3px; background: var(--ds-background-neutral, #f4f5f7);
-      color: var(--ds-text-subtle, #5e6c84); font-size: 12px; cursor: pointer;
-      text-decoration: none;
-    }
-    .btn-settings:hover { background: var(--ds-background-neutral-hovered, #ebecf0); }
-
-    .loader { display: flex; align-items: center; justify-content: center; padding: 40px; gap: 8px; color: var(--ds-text-subtlest, #5e6c84); font-size: 13px; }
+    .loader { display: flex; align-items: center; justify-content: center; padding: 30px; gap: 8px; color: var(--ds-text-subtlest, #5e6c84); font-size: 13px; }
     .spinner { width: 16px; height: 16px; border: 2px solid var(--ds-border, #dfe1e6); border-top-color: var(--ds-text-subtle, #5e6c84); border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .empty { padding: 24px 12px; text-align: center; }
-    .empty-text { font-size: 13px; color: var(--ds-text-subtlest, #5e6c84); margin-bottom: 12px; }
-
-    .error { padding: 24px 12px; text-align: center; color: var(--ds-text-danger, #de350b); font-size: 13px; }
+    .empty-text { padding: 16px 12px; text-align: center; font-size: 13px; color: var(--ds-text-subtlest, #5e6c84); }
+    .error { padding: 16px 12px; text-align: center; color: var(--ds-text-danger, #de350b); font-size: 13px; }
   </style>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script src="js/harvest-api.js"></script>
 </head>
 <body>
   <div id="content">
-    <div class="loader"><div class="spinner"></div> Loading project data…</div>
+    <div class="loader"><div class="spinner"></div> Loading…</div>
   </div>
 
   <script>
@@ -88,121 +79,149 @@
 
     Promise.all([
       t.get('member', 'private', 'harvestCredentials', null),
-      t.get('board', 'shared', 'harvestProjectId', null)
+      t.get('board', 'shared', 'harvestProjectId', null),
+      t.get('board', 'shared', 'badgeVisibility', 'full')
     ]).then(function(results) {
       var creds = results[0];
       var projectId = results[1];
+      var visibility = results[2];
       var container = document.getElementById('content');
 
       if (!creds || !creds.token) {
-        container.innerHTML =
-          '<div class="empty">' +
-            '<div class="empty-text">No Harvest credentials configured.</div>' +
-            '<button class="mod-primary" onclick="openSettings()" style="width:100%">Set up Harvest</button>' +
-          '</div>';
+        container.innerHTML = '<div class="empty-text">No Harvest credentials configured.<br>Use "Authorize Account" in the Power-Up menu.</div>';
         return;
       }
 
-      if (!projectId) {
-        container.innerHTML =
-          '<div class="empty">' +
-            '<div class="empty-text">No Harvest project linked to this board.<br>Select a project in settings to see totals.</div>' +
-            '<button class="mod-primary" onclick="openSettings()" style="width:100%">Link Project</button>' +
-          '</div>';
-        return;
-      }
-
-      // Fetch project details + all entries (paginated)
-      Promise.all([
-        HarvestAPI.request('/projects/' + projectId, creds.token, creds.accountId),
-        HarvestAPI.requestAllPages('/time_entries', creds.token, creds.accountId, { project_id: projectId }, 'time_entries')
-      ]).then(function(data) {
-        var project = data[0];
-        var entries = data[1] || [];
-
-        if (!project) {
-          container.innerHTML = '<div class="error">Could not load project.</div>';
-          return;
-        }
-
-        var totalH = 0, billH = 0, nonBillH = 0, invoicedH = 0, uninvoicedH = 0;
-        var uninvoicedAmount = 0, invoicedAmount = 0;
-        entries.forEach(function(e) {
-          var h = e.rounded_hours || 0;
-          var rate = e.billable_rate || 0;
-          totalH += h;
-          if (e.billable) billH += h; else nonBillH += h;
-          if (e.is_billed) {
-            invoicedH += h;
-            invoicedAmount += h * rate;
-          } else {
-            uninvoicedH += h;
-            uninvoicedAmount += h * rate;
-          }
-        });
-
-        var clientName = project.client ? escapeHtml(project.client.name) : '';
-        var projectName = escapeHtml(project.name);
+      // Load projects for dropdown
+      HarvestAPI.request('/projects', creds.token, creds.accountId, { is_active: true, per_page: 100 }).then(function(projData) {
+        var projects = (projData && projData.projects) ? projData.projects.slice().sort(function(a, b) {
+          var aName = (a.client ? a.client.name + ' — ' + a.name : a.name).toLowerCase();
+          var bName = (b.client ? b.client.name + ' — ' + b.name : b.name).toLowerCase();
+          return aName.localeCompare(bName, 'de');
+        }) : [];
 
         var html = '';
 
-        // Header
-        html += '<div class="header">';
-        html += '<img src="./img/harvest-logo-orange.svg" alt="">';
-        html += '<div>';
-        if (clientName) html += '<div class="client-name">' + clientName + '</div>';
-        html += '<div class="project-name">' + projectName + '</div>';
-        html += '</div></div>';
-
-        // Stats grid
-        html += '<div class="stats">';
-        html += '<div class="stat-card unbilled"><div class="value">' + uninvoicedH.toFixed(1) + 'h</div><div class="label">Unbilled</div></div>';
-        html += '<div class="stat-card amount"><div class="value">' + formatCHF(uninvoicedAmount) + '</div><div class="label">Unbilled Amount</div></div>';
-        html += '<div class="stat-card invoiced"><div class="value">' + invoicedH.toFixed(1) + 'h</div><div class="label">Invoiced</div></div>';
-        html += '<div class="stat-card total"><div class="value">' + totalH.toFixed(1) + 'h</div><div class="label">Total</div></div>';
+        // Board Settings
+        html += '<div class="section">';
+        html += '<div class="section-title">Board Project</div>';
+        html += '<select id="projectId">';
+        html += '<option value="">— none —</option>';
+        projects.forEach(function(p) {
+          var label = p.client ? escapeHtml(p.client.name) + ' — ' + escapeHtml(p.name) : escapeHtml(p.name);
+          var sel = (projectId && String(p.id) === String(projectId)) ? ' selected' : '';
+          html += '<option value="' + p.id + '"' + sel + '>' + label + '</option>';
+        });
+        html += '</select>';
+        html += '<div class="section-title">Card Badge</div>';
+        html += '<select id="visibility">';
+        html += '<option value="full"' + (visibility === 'full' ? ' selected' : '') + '>Show hours (e.g. 2.5h)</option>';
+        html += '<option value="minimal"' + (visibility === 'minimal' ? ' selected' : '') + '>Show only ✓ tracked</option>';
+        html += '<option value="hidden"' + (visibility === 'hidden' ? ' selected' : '') + '>Hidden</option>';
+        html += '</select>';
         html += '</div>';
 
-        // Breakdown
         html += '<div class="divider"></div>';
-        html += '<div class="breakdown">';
-        html += '<div class="breakdown-title">Breakdown</div>';
-        html += '<div class="breakdown-row"><span class="label">Billable</span><span class="value">' + billH.toFixed(1) + 'h</span></div>';
-        if (nonBillH > 0) {
-          html += '<div class="breakdown-row"><span class="label">Non-billable</span><span class="value">' + nonBillH.toFixed(1) + 'h</span></div>';
-        }
-        html += '<div class="breakdown-row"><span class="label">Time entries</span><span class="value">' + entries.length + '</span></div>';
-        if (project.budget) {
-          var budgetType = project.budget_by === 'project' ? 'h' : '';
-          html += '<div class="breakdown-row"><span class="label">Budget</span><span class="value">' + project.budget + budgetType + '</span></div>';
-          if (project.budget_by === 'project') {
-            var pct = Math.round((totalH / project.budget) * 100);
-            html += '<div class="breakdown-row"><span class="label">Used</span><span class="value">' + pct + '%</span></div>';
-          }
-        }
-        html += '</div>';
-
-        // Settings link
-        html += '<div class="divider"></div>';
-        html += '<div class="actions">';
-        html += '<a class="btn-settings" href="#" onclick="openSettings(); return false;">⚙ Settings</a>';
-        html += '</div>';
+        html += '<div id="summary"></div>';
 
         container.innerHTML = html;
-      }).catch(function() {
-        container.innerHTML = '<div class="error">Could not load Harvest data. Please try again.</div>';
+
+        // Auto-save on change
+        document.getElementById('projectId').addEventListener('change', saveAndReload);
+        document.getElementById('visibility').addEventListener('change', saveAndReload);
+
+        // Load summary if project is set
+        if (projectId) loadSummary(creds, projectId, projects);
+        else document.getElementById('summary').innerHTML = '<div class="empty-text">Select a project to see totals.</div>';
       });
 
+      function saveAndReload() {
+        var newProjectId = document.getElementById('projectId').value;
+        var newVisibility = document.getElementById('visibility').value;
+        Promise.all([
+          t.set('board', 'shared', 'harvestProjectId', newProjectId || null),
+          t.set('board', 'shared', 'badgeVisibility', newVisibility)
+        ]).then(function() {
+          if (newProjectId) {
+            document.getElementById('summary').innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+            HarvestAPI.request('/projects', creds.token, creds.accountId, { is_active: true, per_page: 100 }).then(function(projData) {
+              var projects = (projData && projData.projects) ? projData.projects : [];
+              loadSummary(creds, newProjectId, projects);
+            });
+          } else {
+            document.getElementById('summary').innerHTML = '<div class="empty-text">Select a project to see totals.</div>';
+          }
+        });
+      }
+
+      function loadSummary(creds, pid, projects) {
+        Promise.all([
+          HarvestAPI.request('/projects/' + pid, creds.token, creds.accountId),
+          HarvestAPI.requestAllPages('/time_entries', creds.token, creds.accountId, { project_id: pid }, 'time_entries')
+        ]).then(function(data) {
+          var project = data[0];
+          var entries = data[1] || [];
+          var summaryEl = document.getElementById('summary');
+
+          if (!project) {
+            summaryEl.innerHTML = '<div class="error">Could not load project.</div>';
+            return;
+          }
+
+          var totalH = 0, billH = 0, nonBillH = 0, invoicedH = 0, uninvoicedH = 0;
+          var uninvoicedAmount = 0;
+          entries.forEach(function(e) {
+            var h = e.rounded_hours || 0;
+            var rate = e.billable_rate || 0;
+            totalH += h;
+            if (e.billable) billH += h; else nonBillH += h;
+            if (e.is_billed) { invoicedH += h; }
+            else { uninvoicedH += h; uninvoicedAmount += h * rate; }
+          });
+
+          var clientName = project.client ? escapeHtml(project.client.name) : '';
+          var projectName = escapeHtml(project.name);
+
+          var html = '';
+          html += '<div class="header">';
+          html += '<img src="./img/harvest-logo-orange.svg" alt="">';
+          html += '<div>';
+          if (clientName) html += '<div class="client-name">' + clientName + '</div>';
+          html += '<div class="project-name">' + projectName + '</div>';
+          html += '</div></div>';
+
+          html += '<div class="stats">';
+          html += '<div class="stat-card unbilled"><div class="value">' + uninvoicedH.toFixed(1) + 'h</div><div class="label">Unbilled</div></div>';
+          html += '<div class="stat-card amount"><div class="value">' + formatCHF(uninvoicedAmount) + '</div><div class="label">Unbilled Amount</div></div>';
+          html += '<div class="stat-card invoiced"><div class="value">' + invoicedH.toFixed(1) + 'h</div><div class="label">Invoiced</div></div>';
+          html += '<div class="stat-card total"><div class="value">' + totalH.toFixed(1) + 'h</div><div class="label">Total</div></div>';
+          html += '</div>';
+
+          html += '<div class="divider"></div>';
+          html += '<div class="breakdown">';
+          html += '<div class="breakdown-row"><span class="label">Billable</span><span class="value">' + billH.toFixed(1) + 'h</span></div>';
+          if (nonBillH > 0) {
+            html += '<div class="breakdown-row"><span class="label">Non-billable</span><span class="value">' + nonBillH.toFixed(1) + 'h</span></div>';
+          }
+          html += '<div class="breakdown-row"><span class="label">Time entries</span><span class="value">' + entries.length + '</span></div>';
+          if (project.budget) {
+            var budgetType = project.budget_by === 'project' ? 'h' : '';
+            html += '<div class="breakdown-row"><span class="label">Budget</span><span class="value">' + project.budget + budgetType + '</span></div>';
+            if (project.budget_by === 'project') {
+              var pct = Math.round((totalH / project.budget) * 100);
+              html += '<div class="breakdown-row"><span class="label">Used</span><span class="value">' + pct + '%</span></div>';
+            }
+          }
+          html += '</div>';
+
+          summaryEl.innerHTML = html;
+        }).catch(function() {
+          document.getElementById('summary').innerHTML = '<div class="error">Could not load Harvest data.</div>';
+        });
+      }
     }).catch(function(err) {
       document.getElementById('content').innerHTML = '<div class="error">Error: ' + escapeHtml(err.message) + '</div>';
     });
-
-    function openSettings() {
-      t.popup({
-        title: 'Harvest Settings',
-        url: './settings.html',
-        height: 400
-      });
-    }
   </script>
 </body>
 </html>
