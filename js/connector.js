@@ -84,6 +84,21 @@ TrelloPowerUp.initialize({
           type: 'iframe',
           url: t.signUrl('./card-back.html'),
           height: 300
+        },
+        action: {
+          text: 'Log Time',
+          callback: function(t) {
+            return t.card('shortLink', 'name', 'url').then(function(card) {
+              var url = './entry-form.html?shortLink=' + encodeURIComponent(card.shortLink)
+                + '&cardName=' + encodeURIComponent(card.name || '')
+                + '&cardUrl=' + encodeURIComponent(card.url || '');
+              return t.popup({
+                title: 'New Time Entry',
+                url: url,
+                height: 340
+              });
+            });
+          }
         }
       };
     }).catch(function() { return []; });
