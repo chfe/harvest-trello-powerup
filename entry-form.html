@@ -182,10 +182,6 @@
         promise.then(function() {
           status.className = 'status success';
           status.textContent = isEdit ? 'Updated!' : 'Created!';
-          // Invalidate badge cache
-          if (window.parent && window.parent.BADGE_CACHE) {
-            delete window.parent.BADGE_CACHE['b_' + card.shortLink];
-          }
           setTimeout(function() { t.closePopup(); }, 800);
         }).catch(function(err) {
           status.className = 'status error';
