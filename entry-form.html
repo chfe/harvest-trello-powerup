@@ -223,15 +223,15 @@
       html += '<input type="number" id="hours" step="0.25" min="0" value="' + (entry ? (entry.hours || '') : '0.5') + '"></div>';
       html += '</div>';
 
-      // Date + Save button row
-      html += '<div class="row">';
+      // Date (half width)
       html += '<div class="field field-half"><input type="date" id="spent_date" value="' + (entry ? entry.spent_date : today) + '"></div>';
-      html += '<div class="field" style="flex:1"><button class="mod-primary" id="btnSave" style="width:100%;padding:10px 16px;font-size:14px;">' + (isEdit ? 'Update Entry' : 'Save Entry') + '</button></div>';
-      html += '</div>';
 
-      // Delete (separate, less prominent)
+      // Save button (full width)
+      html += '<div class="field"><button class="mod-primary" id="btnSave" style="width:100%;padding:10px 16px;font-size:14px;">' + (isEdit ? 'Update Entry' : 'Save Entry') + '</button></div>';
+
+      // Delete link
       if (isEdit) {
-        html += '<div style="text-align:right;margin-top:4px;"><button class="btn-delete" id="btnDelete">Delete Entry</button></div>';
+        html += '<div style="text-align:right;"><button class="btn-delete" id="btnDelete">Delete Entry</button></div>';
       }
 
       html += '<div id="status" class="status"></div>';
