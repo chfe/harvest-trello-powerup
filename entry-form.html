@@ -33,7 +33,7 @@
     body { margin: 0; padding: 0; }
     .form { padding: 12px 20px; }
     .field { margin-bottom: 8px; }
-    .field label { display: block; font-size: 11px; font-weight: 600; color: var(--ds-text-subtlest, #5e6c84); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .field label { display: none; }
     .field input, .field select, .field textarea {
       width: 100%; padding: 10px 12px; font-size: 14px;
       border: 1px solid var(--ds-border-input, #dfe1e6); border-radius: 6px;
@@ -46,8 +46,8 @@
     }
     .field textarea { resize: vertical; min-height: 60px; }
 
-    .row { display: flex; gap: 10px; }
-    .row .field { flex: 1; margin-bottom: 8px; }
+    .row { display: flex; gap: 10px; align-items: start; }
+    .row .field { margin-bottom: 8px; }
 
     .notes-hours { display: flex; gap: 10px; margin-bottom: 8px; }
     .notes-hours .field { margin-bottom: 0; }
@@ -59,9 +59,6 @@
 
     .field-half { width: 50%; }
 
-    .actions { display: flex; gap: 8px; margin-top: 12px; }
-    .actions button { padding: 10px 16px; font-size: 14px; }
-    .actions .mod-primary { flex: 1; }
     .btn-delete {
       background: none; border: 1px solid var(--ds-border, #dfe1e6);
       color: var(--ds-text-danger, #de350b); border-radius: 6px; padding: 10px 16px;
@@ -162,44 +159,41 @@
 
       var html = '<div class="form">';
 
-      // Project + Task row
-      html += '<div class="row">';
-      html += '<div class="field"><label>Project</label>';
-      html += '<select id="project_id">';
+      // Project
+      html += '<div class="field"><select id="project_id">';
       allProjects.forEach(function(p) {
         var label = p.client ? escapeHtml(p.client.name) + ' — ' + escapeHtml(p.name) : escapeHtml(p.name);
         var sel = (String(p.id) === String(currentProjectId)) ? ' selected' : '';
         html += '<option value="' + p.id + '"' + sel + '>' + label + '</option>';
       });
       html += '</select></div>';
-      html += '<div class="field"><label>Task</label>';
-      html += '<select id="task_id">';
+
+      // Task
+      html += '<div class="field"><select id="task_id">';
       tasks.forEach(function(task) {
         var sel = (entry && entry.task && entry.task.id === task.id) ? ' selected' : '';
         html += '<option value="' + task.id + '"' + sel + '>' + escapeHtml(task.name) + '</option>';
       });
       html += '</select></div>';
-      html += '</div>';
 
       // Notes + Hours
       html += '<div class="notes-hours">';
-      html += '<div class="field field-notes"><label>Notes</label>';
+      html += '<div class="field field-notes">';
       html += '<textarea id="notes" placeholder="What did you work on?">' + (entry ? escapeHtml(entry.notes || '') : escapeHtml(card.name)) + '</textarea></div>';
-      html += '<div class="field field-hours"><label>Hours</label>';
+      html += '<div class="field field-hours">';
       html += '<input type="number" id="hours" step="0.25" min="0" value="' + (entry ? (entry.hours || '') : '0.5') + '"></div>';
       html += '</div>';
 
-      // Date (half width)
-      html += '<div class="field field-half"><label>Date</label>';
-      html += '<input type="date" id="spent_date" value="' + (entry ? entry.spent_date : today) + '"></div>';
-
-      // Buttons
-      html += '<div class="actions">';
-      if (isEdit) {
-        html += '<button class="btn-delete" id="btnDelete">Delete</button>';
-      }
-      html += '<button class="mod-primary" id="btnSave">' + (isEdit ? 'Update Entry' : 'Save Entry') + '</button>';
+      // Date + Save button row
+      html += '<div class="row">';
+      html += '<div class="field field-half"><input type="date" id="spent_date" value="' + (entry ? entry.spent_date : today) + '"></div>';
+      html += '<div class="field" style="flex:1"><button class="mod-primary" id="btnSave" style="width:100%;padding:10px 16px;font-size:14px;">' + (isEdit ? 'Update Entry' : 'Save Entry') + '</button></div>';
       html += '</div>';
+
+      // Delete (separate, less prominent)
+      if (isEdit) {
+        html += '<div style="text-align:right;margin-top:4px;"><button class="btn-delete" id="btnDelete">Delete Entry</button></div>';
+      }
 
       html += '<div id="status" class="status"></div>';
 
