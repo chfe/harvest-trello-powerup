@@ -120,7 +120,7 @@
           entries.forEach(function(e) {
             var h = e.rounded_hours || 0;
             totalH += h;
-            if (e.billable) billH += h;
+            if (e.billable && e.billable_rate > 0) billH += h;
             else nonBillH += h;
             if (e.is_billed) invoicedH += h;
             else uninvoicedH += h;
@@ -150,7 +150,7 @@
             var notes = escapeHtml(e.notes || '');
             var hours = (e.rounded_hours || 0).toFixed(2);
 
-            var billBadge = e.billable
+            var billBadge = (e.billable && e.billable_rate > 0)
               ? '<span class="badge badge-billable">billable</span>'
               : '<span class="badge badge-nonbillable">non-bill.</span>';
 

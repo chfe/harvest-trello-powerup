@@ -174,7 +174,7 @@
             var h = e.rounded_hours || 0;
             var rate = e.billable_rate || 0;
             totalH += h;
-            if (e.billable) billH += h; else nonBillH += h;
+            if (e.billable && e.billable_rate > 0) billH += h; else nonBillH += h;
             if (e.is_billed) { invoicedH += h; }
             else { uninvoicedH += h; uninvoicedAmount += h * rate; }
           });
