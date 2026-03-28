@@ -42,12 +42,25 @@ const HarvestAPI = {
     }
   },
 
+  async requestAllPages(path, token, accountId, params = {}, dataKey) {
+    if (!token || !accountId) return [];
+    let all = [];
+    let page = 1;
+    while (true) {
+      const data = await this.request(path, token, accountId,
+        Object.assign({}, params, { page: page, per_page: 100 }));
+      if (!data || !data[dataKey] || data[dataKey].length === 0) break;
+      all = all.concat(data[dataKey]);
+      if (!data.next_page) break;
+      page = data.next_page;
+    }
+    return all;
+  },
+
   async getEntriesForCard(token, accountId, shortLink) {
-    const data = await this.request('/time_entries', token, accountId, {
-      external_reference_id: shortLink,
-      per_page: 100
-    });
-    return (data && data.time_entries) ? data.time_entries : [];
+    return this.requestAllPages('/time_entries', token, accountId, {
+      external_reference_id: shortLink
+    }, 'time_entries');
   },
 
   async getTotalHours(token, accountId, shortLink) {
@@ -71,21 +84,24 @@ const HarvestAPI = {
   async getProjectTotals(token, accountId, projectId) {
     if (!projectId) return null;
 
-    const data = await this.request('/time_entries', token, accountId, {
-      project_id: projectId,
-      is_billed: false,
-      per_page: 100
-    });
-    if (!data || !data.time_entries) return null;
+    const entries = await this.requestAllPages('/time_entries', token, accountId, {
+      project_id: projectId
+    }, 'time_entries');
 
-    let uninvoicedHours = 0, uninvoicedAmount = 0, count = 0;
-    data.time_entries.forEach(e => {
-      uninvoicedHours += e.rounded_hours || 0;
-      uninvoicedAmount += e.billable_rate ? (e.rounded_hours || 0) * e.billable_rate : 0;
-      count++;
+    let uninvoicedHours = 0, uninvoicedAmount = 0;
+    let invoicedHours = 0, totalHours = 0;
+    entries.forEach(e => {
+      const h = e.rounded_hours || 0;
+      totalHours += h;
+      if (e.is_billed) {
+        invoicedHours += h;
+      } else {
+        uninvoicedHours += h;
+        uninvoicedAmount += e.billable_rate ? h * e.billable_rate : 0;
+      }
     });
 
-    return { uninvoicedHours, uninvoicedAmount, count };
+    return { uninvoicedHours, uninvoicedAmount, invoicedHours, totalHours, count: entries.length };
   },
 
   async getTaskAssignments(token, accountId, projectId) {

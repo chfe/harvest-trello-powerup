@@ -112,20 +112,18 @@
         return;
       }
 
-      // Fetch project details + uninvoiced entries
+      // Fetch project details + all entries (paginated)
       Promise.all([
         HarvestAPI.request('/projects/' + projectId, creds.token, creds.accountId),
-        HarvestAPI.request('/time_entries', creds.token, creds.accountId, { project_id: projectId, per_page: 100 })
+        HarvestAPI.requestAllPages('/time_entries', creds.token, creds.accountId, { project_id: projectId }, 'time_entries')
       ]).then(function(data) {
         var project = data[0];
-        var entriesData = data[1];
+        var entries = data[1] || [];
 
         if (!project) {
           container.innerHTML = '<div class="error">Could not load project.</div>';
           return;
         }
-
-        var entries = (entriesData && entriesData.time_entries) ? entriesData.time_entries : [];
 
         var totalH = 0, billH = 0, nonBillH = 0, invoicedH = 0, uninvoicedH = 0;
         var uninvoicedAmount = 0, invoicedAmount = 0;
