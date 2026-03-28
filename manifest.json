@@ -1,0 +1,15 @@
+{
+  "name": "Harvest Time Tracker",
+  "details": "Shows Harvest time entries on Trello cards with badges and detailed views",
+  "icon": "https://proxy.harvestfiles.com/production_harvestapp_public/uploads/platform_icons/trello.com.png?1594322878",
+  "author": "Devetia GmbH",
+  "capabilities": [
+    "card-badges",
+    "card-detail-badges",
+    "card-back-section",
+    "board-buttons",
+    "authorization-status",
+    "show-authorization"
+  ],
+  "connectorUrl": "https://localhost:5555/index.html"
+}
