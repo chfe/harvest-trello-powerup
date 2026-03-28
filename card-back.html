@@ -15,7 +15,10 @@
     .summary {
       display: flex; gap: 12px; padding: 8px 12px;
       background: var(--ds-background-neutral, rgba(128,128,128,0.08)); border-radius: 6px; margin-bottom: 8px;
+      cursor: pointer;
     }
+    .summary:hover { background: var(--ds-background-neutral-hovered, rgba(128,128,128,0.14)); }
+    .summary .toggle { color: var(--ds-text-subtlest, #999); font-size: 12px; display: flex; align-items: center; margin-left: auto; }
     .summary-item { text-align: center; min-width: 50px; }
     .summary-item .value { font-size: 15px; font-weight: 700; color: var(--ds-text, #333); }
     .summary-item .label { font-size: 9px; color: var(--ds-text-subtlest, #999); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -52,6 +55,9 @@
       border: none; border-radius: 3px; cursor: pointer;
     }
     .btn-add:hover { background: var(--ds-background-neutral-hovered, #ebecf0); color: var(--ds-text, #172b4d); }
+
+    .collapsible { overflow: hidden; }
+    .collapsible.collapsed { display: none; }
 
     .empty { padding: 16px; text-align: center; color: var(--ds-text-subtlest, #aaa); font-size: 12px; }
     .empty .btn-add { margin-top: 8px; }
@@ -92,6 +98,23 @@
         url: url,
         height: 340,
         mouseEvent: mouseEvent
+      });
+    }
+
+    function bindToggle() {
+      var summary = document.querySelector('.summary');
+      if (!summary) return;
+      summary.addEventListener('click', function() {
+        var details = document.getElementById('details');
+        var icon = document.getElementById('toggleIcon');
+        if (details.classList.contains('collapsed')) {
+          details.classList.remove('collapsed');
+          icon.textContent = '▼';
+        } else {
+          details.classList.add('collapsed');
+          icon.textContent = '▶';
+        }
+        resize();
       });
     }
 
@@ -159,8 +182,10 @@
             html += '<div class="summary-item uninvoiced"><div class="value">' + uninvoicedH.toFixed(2) + 'h</div><div class="label">Unbilled</div></div>';
           }
           html += '<div class="summary-item"><div class="value">' + entries.length + '</div><div class="label">Entries</div></div>';
+          html += '<span class="toggle" id="toggleIcon">▼</span>';
           html += '</div>';
 
+          html += '<div class="collapsible" id="details">';
           html += '<div class="toolbar"><button class="btn-add">+ Add Entry</button></div>';
           html += '<div class="entries">';
           entries.forEach(function(e) {
@@ -186,9 +211,11 @@
             html += '</div>';
           });
           html += '</div>';
+          html += '</div>'; // close .collapsible
 
           container.innerHTML = html;
           bindEntryClicks();
+          bindToggle();
           resize();
         }).catch(function(err) {
           container.innerHTML = '<div class="error">Could not load Harvest data. Please try again.</div>';

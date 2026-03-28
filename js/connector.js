@@ -49,36 +49,7 @@ TrelloPowerUp.initialize({
   },
 
   'card-detail-badges': function(t) {
-    return t.card('shortLink').then(function(card) {
-      return t.get('member', 'private', 'harvestCredentials', null).then(function(creds) {
-        if (!creds || !creds.token) return [];
-
-        return HarvestAPI.getTotalHours(creds.token, creds.accountId, card.shortLink).then(function(totals) {
-          if (!totals || totals.count === 0) return [];
-
-          var badges = [{
-            title: 'Total',
-            text: totals.totalHours.toFixed(2) + 'h (' + totals.count + ' entries)',
-            color: 'green'
-          }];
-
-          if (totals.billableHours > 0) {
-            badges.push({ title: 'Billable', text: totals.billableHours.toFixed(2) + 'h', color: 'blue' });
-          }
-          if (totals.unbillableHours > 0) {
-            badges.push({ title: 'Non-billable', text: totals.unbillableHours.toFixed(2) + 'h', color: 'yellow' });
-          }
-          if (totals.uninvoicedHours > 0) {
-            badges.push({ title: 'Uninvoiced', text: totals.uninvoicedHours.toFixed(2) + 'h', color: 'red' });
-          }
-          if (totals.invoicedHours > 0) {
-            badges.push({ title: 'Invoiced', text: totals.invoicedHours.toFixed(2) + 'h', color: 'green' });
-          }
-
-          return badges;
-        }).catch(function() { return []; });
-      }).catch(function() { return []; });
-    });
+    return [];
   },
 
   'card-buttons': function(t) {
