@@ -31,6 +31,7 @@
       font-size: 12px;
     }
     .entry:last-child { border-bottom: none; }
+    .entry:hover { background: var(--ds-background-neutral-hovered, rgba(128,128,128,0.08)); cursor: pointer; border-radius: 3px; }
     .entry-date { color: var(--ds-text-subtlest, #999); }
     .entry-info { overflow: hidden; }
     .entry-task { color: var(--ds-text-subtle, #666); font-size: 11px; }
@@ -42,8 +43,6 @@
     .badge-nonbillable { background: var(--ds-background-warning, #fff7e6); color: var(--ds-text-warning, #974f0c); }
     .badge-invoiced { background: var(--ds-background-success, #e3fcef); color: var(--ds-text-success, #006644); }
     .badge-uninvoiced { background: var(--ds-background-danger, #ffebe6); color: var(--ds-text-danger, #de350b); }
-
-    .entry:hover { background: var(--ds-background-neutral-hovered, rgba(128,128,128,0.08)); cursor: pointer; border-radius: 3px; }
 
     .toolbar { display: flex; justify-content: flex-end; margin-bottom: 4px; }
     .btn-add {
@@ -68,8 +67,8 @@
 
   <script>
     var t = TrelloPowerUp.iframe();
-    var lastShortLink = null;
-    var lastHtml = null;
+    var currentCard = null;
+    var renderCount = 0;
 
     function resize() {
       setTimeout(function() {
@@ -82,8 +81,6 @@
       div.textContent = str;
       return div.innerHTML;
     }
-
-    var currentCard = null;
 
     function openEntryForm(entryId, mouseEvent) {
       var url = './entry-form.html?shortLink=' + encodeURIComponent(currentCard.shortLink)
@@ -104,8 +101,7 @@
           openEntryForm(el.getAttribute('data-entry-id'), e);
         });
       });
-      var addBtns = document.querySelectorAll('.btn-add');
-      addBtns.forEach(function(btn) {
+      document.querySelectorAll('.btn-add').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
           e.stopPropagation();
           openEntryForm(null, e);
@@ -113,7 +109,9 @@
       });
     }
 
-    t.render(function() {
+    function loadEntries() {
+      var container = document.getElementById('content');
+
       Promise.all([
         t.get('member', 'private', 'harvestCredentials', null),
         t.card('shortLink', 'name', 'url')
@@ -121,7 +119,6 @@
         var creds = results[0];
         var card = results[1];
         currentCard = card;
-        var container = document.getElementById('content');
 
         if (!creds || !creds.token) {
           container.innerHTML = '';
@@ -129,15 +126,9 @@
           return;
         }
 
-        // After popup close, re-fetch to show changes
-        // (lastHtml is null after create/edit actions)
-
         HarvestAPI.getEntriesForCard(creds.token, creds.accountId, card.shortLink).then(function(entries) {
-          lastShortLink = card.shortLink;
-
           if (!entries || entries.length === 0) {
             container.innerHTML = '<div class="empty">No time entries for this card.<br><button class="btn-add">+ Add Entry</button></div>';
-            lastShortLink = null;
             bindEntryClicks();
             resize();
             return;
@@ -196,7 +187,6 @@
           });
           html += '</div>';
 
-          lastHtml = null; // don't cache — need live click handlers
           container.innerHTML = html;
           bindEntryClicks();
           resize();
@@ -205,9 +195,16 @@
           resize();
         });
       }).catch(function(err) {
-        document.getElementById('content').innerHTML = '<div class="error">Error: ' + escapeHtml(err.message) + '</div>';
+        container.innerHTML = '<div class="error">Error: ' + escapeHtml(err.message) + '</div>';
         resize();
       });
+    }
+
+    // t.render is called by Trello on initial load AND after popup closes
+    t.render(function() {
+      renderCount++;
+      // Always re-fetch (no caching) so changes from popups are visible
+      loadEntries();
     });
   </script>
 </body>

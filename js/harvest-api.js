@@ -31,7 +31,8 @@ const HarvestAPI = {
 
     try {
       const res = await fetch(url.toString(), {
-        headers: this._headers(token, accountId)
+        headers: this._headers(token, accountId),
+        cache: 'no-store'
       });
       if (!res.ok) return null;
       return res.json();
