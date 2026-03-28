@@ -182,7 +182,10 @@
         promise.then(function() {
           status.className = 'status success';
           status.textContent = isEdit ? 'Updated!' : 'Created!';
-          setTimeout(function() { t.closePopup(); }, 800);
+          setTimeout(function() {
+            t.set('card', 'shared', 'harvestLastUpdated', Date.now())
+              .then(function() { t.closePopup(); });
+          }, 800);
         }).catch(function(err) {
           status.className = 'status error';
           status.textContent = 'Error: ' + err.message;
@@ -200,7 +203,10 @@
           HarvestAPI.deleteEntry(creds.token, creds.accountId, entryId).then(function() {
             status.className = 'status success';
             status.textContent = 'Deleted!';
-            setTimeout(function() { t.closePopup(); }, 800);
+            setTimeout(function() {
+              t.set('card', 'shared', 'harvestLastUpdated', Date.now())
+                .then(function() { t.closePopup(); });
+            }, 800);
           }).catch(function(err) {
             status.className = 'status error';
             status.textContent = 'Error: ' + err.message;
