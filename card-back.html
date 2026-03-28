@@ -83,9 +83,13 @@
       return div.innerHTML;
     }
 
+    var currentCard = null;
+
     function openEntryForm(entryId, mouseEvent) {
-      var url = './entry-form.html';
-      if (entryId) url += '?entryId=' + entryId;
+      var url = './entry-form.html?shortLink=' + encodeURIComponent(currentCard.shortLink)
+        + '&cardName=' + encodeURIComponent(currentCard.name || '')
+        + '&cardUrl=' + encodeURIComponent(currentCard.url || '');
+      if (entryId) url += '&entryId=' + entryId;
       t.popup({
         title: entryId ? 'Edit Time Entry' : 'New Time Entry',
         url: url,
@@ -112,10 +116,11 @@
     t.render(function() {
       Promise.all([
         t.get('member', 'private', 'harvestCredentials', null),
-        t.card('shortLink')
+        t.card('shortLink', 'name', 'url')
       ]).then(function(results) {
         var creds = results[0];
         var card = results[1];
+        currentCard = card;
         var container = document.getElementById('content');
 
         if (!creds || !creds.token) {

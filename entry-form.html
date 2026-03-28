@@ -53,15 +53,20 @@
     var params = new URLSearchParams(window.location.search);
     var entryId = params.get('entryId');
     var isEdit = !!entryId;
+    var card = {
+      shortLink: params.get('shortLink'),
+      name: params.get('cardName') || '',
+      url: params.get('cardUrl') || ''
+    };
 
     Promise.all([
       t.get('member', 'private', 'harvestCredentials', null),
       t.get('board', 'shared', 'harvestProjectId', null),
-      t.card('shortLink', 'name', 'url')
+      card.shortLink ? Promise.resolve(card) : t.card('shortLink', 'name', 'url')
     ]).then(function(results) {
       var creds = results[0];
       var projectId = results[1];
-      var card = results[2];
+      card = results[2];
 
       if (!creds || !creds.token) {
         container.innerHTML = '<div class="no-project">No Harvest credentials configured.</div>';
