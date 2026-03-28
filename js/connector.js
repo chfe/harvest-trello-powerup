@@ -28,26 +28,10 @@ TrelloPowerUp.initialize({
               return minBadges;
             }
 
-            var badges = [
-              // --- TEST: Trello docs example badges ---
-              {
-                dynamic: function() {
-                  return {
-                    text: 'Dynamic ' + (Math.random() * 100).toFixed(0),
-                    color: 'green',
-                    refresh: 10
-                  };
-                }
-              },
-              { text: 'Static', color: null },
-              { text: 'Green', color: 'green' },
-              { text: 'Sky', color: 'sky' },
-              // --- END TEST ---
-              {
-                text: totals.totalHours.toFixed(1) + 'h',
-                color: totals.unbillableHours > 0 ? 'orange' : 'sky',
-              }
-            ];
+            var badges = [{
+              text: totals.totalHours.toFixed(1) + 'h',
+              color: totals.unbillableHours > 0 ? 'orange' : 'sky'
+            }];
 
             if (totals.uninvoicedHours > 0 && totals.uninvoicedHours < totals.totalHours) {
               badges.push({
