@@ -105,9 +105,9 @@ TrelloPowerUp.initialize({
       text: 'Harvest',
       callback: function(t) {
         return t.popup({
-          title: 'Harvest Settings',
-          url: './settings.html',
-          height: 400
+          title: 'Harvest',
+          url: './board-summary.html',
+          height: 420
         });
       }
     }];
