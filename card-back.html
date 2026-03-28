@@ -43,8 +43,8 @@
       const container = document.getElementById('content');
 
       try {
-        const { token } = await HarvestAPI.getCredentials(t).catch(() => ({}));
-        if (!token) {
+        const creds = await t.get('member', 'private', 'harvestCredentials', null);
+        if (!creds || !creds.token) {
           container.innerHTML = '<div class="no-config">Please configure Harvest in board settings.</div>';
           return;
         }
@@ -52,7 +52,7 @@
         const card = await t.card('shortLink', 'name');
         const shortLink = card.shortLink;
 
-        const entries = await HarvestAPI.getEntriesForCard(t, null, shortLink);
+        const entries = await HarvestAPI.getEntriesForCard(creds.token, creds.accountId, shortLink);
 
         if (!entries || entries.length === 0) {
           container.innerHTML = '<div class="no-entries">No time entries for this card.</div>';
