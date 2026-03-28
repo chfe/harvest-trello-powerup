@@ -5,10 +5,12 @@
   "author": "Devetia GmbH",
   "capabilities": [
     "card-badges",
-    "card-detail-badges",
+    "card-buttons",
     "card-back-section",
     "board-buttons",
-    "show-settings"
+    "show-settings",
+    "authorization-status",
+    "show-authorization"
   ],
   "connectorUrl": "https://chfe.github.io/harvest-trello-powerup/index.html"
 }
