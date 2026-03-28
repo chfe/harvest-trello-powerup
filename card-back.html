@@ -83,27 +83,28 @@
       return div.innerHTML;
     }
 
-    function openEntryForm(entryId) {
+    function openEntryForm(entryId, mouseEvent) {
       var url = './entry-form.html';
       if (entryId) url += '?entryId=' + entryId;
       t.popup({
         title: entryId ? 'Edit Time Entry' : 'New Time Entry',
         url: url,
-        height: 340
+        height: 340,
+        mouseEvent: mouseEvent
       });
     }
 
     function bindEntryClicks() {
       document.querySelectorAll('.entry[data-entry-id]').forEach(function(el) {
-        el.addEventListener('click', function() {
-          openEntryForm(el.getAttribute('data-entry-id'));
+        el.addEventListener('click', function(e) {
+          openEntryForm(el.getAttribute('data-entry-id'), e);
         });
       });
       var addBtns = document.querySelectorAll('.btn-add');
       addBtns.forEach(function(btn) {
         btn.addEventListener('click', function(e) {
           e.stopPropagation();
-          openEntryForm();
+          openEntryForm(null, e);
         });
       });
     }
