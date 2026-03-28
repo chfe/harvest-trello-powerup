@@ -3,30 +3,37 @@
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="https://p.trellocdn.com/power-up.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.min.css">
   <style>
-    /* Tom Select dark mode overrides */
+    /* Tom Select overrides */
     .ts-wrapper .ts-control {
       padding: 8px 12px; font-size: 14px; border-radius: 6px;
       border: 1px solid var(--ds-border-input, #dfe1e6);
-      background: var(--ds-background-input, #fafbfc);
-      color: var(--ds-text, #172b4d);
+      background: var(--ds-background-input, #22272b);
+      color: var(--ds-text, #b6c2cf);
     }
     .ts-wrapper.focus .ts-control {
-      border-color: var(--ds-border-focused, #0079bf);
-      box-shadow: 0 0 0 1px var(--ds-border-focused, #0079bf);
+      border-color: var(--ds-border-focused, #579dff);
+      box-shadow: 0 0 0 1px var(--ds-border-focused, #579dff);
     }
-    .ts-dropdown { border-radius: 6px; border: 1px solid var(--ds-border, #dfe1e6); background: var(--ds-background-overlay, #fff); }
-    .ts-dropdown .option { padding: 8px 12px; font-size: 13px; color: var(--ds-text, #172b4d); }
-    .ts-dropdown .active { background: var(--ds-background-selected, #e2e4e9); }
-    .ts-wrapper .ts-control input { color: var(--ds-text, #172b4d); }
-
-    @media (prefers-color-scheme: dark) {
-      .ts-wrapper .ts-control { background: var(--ds-background-input, #22272b); color: var(--ds-text, #b6c2cf); border-color: var(--ds-border-input, #3d474f); }
-      .ts-dropdown { background: var(--ds-background-overlay, #282e33); border-color: var(--ds-border, #3d474f); }
-      .ts-dropdown .option { color: var(--ds-text, #b6c2cf); }
-      .ts-dropdown .active { background: var(--ds-background-selected, #3d474f); }
-      .ts-wrapper .ts-control input { color: var(--ds-text, #b6c2cf); }
+    .ts-wrapper .ts-control input {
+      color: var(--ds-text, #b6c2cf) !important;
+    }
+    .ts-dropdown {
+      border-radius: 6px;
+      border: 1px solid var(--ds-border, #3d474f);
+      background: var(--ds-background-overlay, #282e33);
+    }
+    .ts-dropdown .option {
+      padding: 8px 12px; font-size: 13px;
+      color: var(--ds-text, #b6c2cf);
+    }
+    .ts-dropdown .active {
+      background: var(--ds-background-selected, #3d474f);
+      color: var(--ds-text, #fff);
+    }
+    .ts-dropdown .highlight {
+      background: rgba(87, 157, 255, 0.2);
     }
   </style>
   <style>
@@ -78,7 +85,7 @@
     .no-project { padding: 20px; text-align: center; font-size: 13px; color: var(--ds-text-subtlest, #5e6c84); }
   </style>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.base.min.js"></script>
   <script src="js/harvest-api.js"></script>
 </head>
 <body>
@@ -93,6 +100,9 @@
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') t.closeModal();
       if (e.key === 'Enter' && !e.shiftKey && document.activeElement.tagName !== 'TEXTAREA') {
+        // Don't save if a Tom Select dropdown is open
+        var openDropdown = document.querySelector('.ts-dropdown:not([style*="display: none"])');
+        if (openDropdown) return;
         e.preventDefault();
         var btn = document.getElementById('btnSave');
         if (btn) btn.click();
@@ -206,8 +216,9 @@
       container.innerHTML = html;
 
       // Init Tom Select on dropdowns
-      var projectSelect = new TomSelect('#project_id', { maxOptions: null });
-      var taskSelect = new TomSelect('#task_id', { maxOptions: null });
+      var tsConfig = { maxOptions: null, loadThrottle: 0, refreshThrottle: 0 };
+      var projectSelect = new TomSelect('#project_id', tsConfig);
+      var taskSelect = new TomSelect('#task_id', tsConfig);
 
       setTimeout(function() { document.getElementById('hours').focus(); document.getElementById('hours').select(); }, 150);
 
