@@ -48,7 +48,12 @@
       }).then(function(data) {
         if (!data || !data.projects) return;
         select.innerHTML = '<option value="">— none —</option>';
-        data.projects.forEach(function(p) {
+        var projects = data.projects.slice().sort(function(a, b) {
+          var aName = (a.client ? a.client.name + ' — ' + a.name : a.name).toLowerCase();
+          var bName = (b.client ? b.client.name + ' — ' + b.name : b.name).toLowerCase();
+          return aName.localeCompare(bName, 'de');
+        });
+        projects.forEach(function(p) {
           var opt = document.createElement('option');
           opt.value = p.id;
           opt.textContent = p.client ? p.client.name + ' — ' + p.name : p.name;
