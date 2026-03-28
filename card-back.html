@@ -7,12 +7,17 @@
     body { margin: 0; padding: 0; }
     .container { padding: 4px 0; }
 
+    /* Loading spinner */
+    .loader { display: flex; align-items: center; justify-content: center; padding: 20px; gap: 8px; color: var(--ds-text-subtlest, #999); font-size: 12px; }
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--ds-border, #ddd); border-top-color: var(--ds-text-subtle, #666); border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .summary {
       display: flex; gap: 12px; padding: 8px 12px;
-      background: rgba(128,128,128,0.08); border-radius: 6px; margin-bottom: 8px;
+      background: var(--ds-background-neutral, rgba(128,128,128,0.08)); border-radius: 6px; margin-bottom: 8px;
     }
     .summary-item { text-align: center; min-width: 50px; }
-    .summary-item .value { font-size: 15px; font-weight: 700; }
+    .summary-item .value { font-size: 15px; font-weight: 700; color: var(--ds-text, #333); }
     .summary-item .label { font-size: 9px; color: var(--ds-text-subtlest, #999); text-transform: uppercase; letter-spacing: 0.5px; }
     .summary-item.total .value { color: var(--ds-text-success, #22863a); }
     .summary-item.billable .value { color: var(--ds-text-information, #0052cc); }
@@ -20,7 +25,7 @@
     .entries { margin-top: 4px; }
     .entry {
       display: flex; align-items: flex-start; gap: 8px;
-      padding: 6px 4px; border-bottom: 1px solid rgba(128,128,128,0.12);
+      padding: 6px 4px; border-bottom: 1px solid var(--ds-border, rgba(128,128,128,0.12));
       font-size: 12px;
     }
     .entry:last-child { border-bottom: none; }
@@ -39,10 +44,20 @@
   <script src="js/harvest-api.js"></script>
 </head>
 <body>
-  <div id="content" class="container"><div class="empty">Loading...</div></div>
+  <div id="content" class="container">
+    <div class="loader"><div class="spinner"></div> Loading Harvest data...</div>
+  </div>
 
   <script>
     var t = TrelloPowerUp.iframe();
+    var lastShortLink = null;
+    var lastHtml = null;
+
+    function resize() {
+      setTimeout(function() {
+        t.sizeTo(document.documentElement.offsetHeight + 10);
+      }, 50);
+    }
 
     t.render(function() {
       Promise.all([
@@ -59,10 +74,20 @@
           return;
         }
 
+        // Render guard: don't re-fetch if same card
+        if (card.shortLink === lastShortLink && lastHtml) {
+          container.innerHTML = lastHtml;
+          resize();
+          return;
+        }
+
         HarvestAPI.getEntriesForCard(creds.token, creds.accountId, card.shortLink).then(function(entries) {
+          lastShortLink = card.shortLink;
+
           if (!entries || entries.length === 0) {
-            container.innerHTML = '<div class="empty">No time entries for this card.</div>';
-            t.sizeTo('#content');
+            lastHtml = '<div class="empty">No time entries for this card.</div>';
+            container.innerHTML = lastHtml;
+            resize();
             return;
           }
 
@@ -105,9 +130,16 @@
           });
           html += '</div>';
 
+          lastHtml = html;
           container.innerHTML = html;
-          t.sizeTo('#content');
+          resize();
+        }).catch(function(err) {
+          container.innerHTML = '<div class="error">Could not load Harvest data. Please try again.</div>';
+          resize();
         });
+      }).catch(function(err) {
+        document.getElementById('content').innerHTML = '<div class="error">Error: ' + err.message + '</div>';
+        resize();
       });
     });
   </script>

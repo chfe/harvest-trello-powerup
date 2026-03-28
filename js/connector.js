@@ -20,7 +20,9 @@ TrelloPowerUp.initialize({
             if (visibility === 'hidden') return [];
 
             if (visibility === 'minimal') {
-              return [{ text: '✓ tracked', color: 'green' }];
+              var minBadges = [{ text: '✓ tracked', color: 'green' }];
+              BADGE_CACHE[key] = { badges: minBadges, time: Date.now() };
+              return minBadges;
             }
 
             var badges = [{
@@ -31,8 +33,8 @@ TrelloPowerUp.initialize({
             BADGE_CACHE[key] = { badges: badges, time: Date.now() };
             return badges;
           });
-        });
-      });
+        }).catch(function() { return []; });
+      }).catch(function() { return []; });
     });
   },
 
@@ -58,8 +60,8 @@ TrelloPowerUp.initialize({
           }
 
           return badges;
-        });
-      });
+        }).catch(function() { return []; });
+      }).catch(function() { return []; });
     });
   },
 
@@ -75,7 +77,7 @@ TrelloPowerUp.initialize({
           height: 300
         }
       };
-    });
+    }).catch(function() { return []; });
   },
 
   'board-buttons': function(t) {
@@ -85,9 +87,17 @@ TrelloPowerUp.initialize({
         return t.popup({
           title: 'Harvest Settings',
           url: './settings.html',
-          height: 280
+          height: 320
         });
       }
     }];
+  },
+
+  'show-settings': function(t) {
+    return t.popup({
+      title: 'Harvest Settings',
+      url: './settings.html',
+      height: 320
+    });
   }
 });
