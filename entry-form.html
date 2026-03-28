@@ -18,6 +18,11 @@
       border-radius: 6px;
       box-shadow: none;
       cursor: pointer;
+      flex-wrap: nowrap !important;
+    }
+    .ts-wrapper.single .ts-control > input {
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
     }
     .ts-wrapper.focus .ts-control {
       border-color: var(--ds-border-focused, #579dff);
