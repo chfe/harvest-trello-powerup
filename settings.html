@@ -2,92 +2,67 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #333; padding: 12px; }
-    h3 { margin-bottom: 12px; font-size: 14px; }
-    label { display: block; font-size: 11px; font-weight: 600; color: #666; margin-bottom: 4px; text-transform: uppercase; }
-    input, select { width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; margin-bottom: 12px; }
-    input:focus, select:focus { outline: none; border-color: #0079BF; }
-    button { background: #0079BF; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 13px; cursor: pointer; width: 100%; }
-    button:hover { background: #026AA7; }
-    .success { color: #2e7d32; font-size: 12px; margin-top: 8px; text-align: center; }
-    .help { font-size: 11px; color: #999; margin-top: -8px; margin-bottom: 12px; }
-    .section { margin-top: 16px; padding-top: 12px; border-top: 1px solid #eee; }
-  </style>
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.css">
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
 </head>
 <body>
-  <h3>Harvest Connection</h3>
+  <div style="padding: 8px;">
+    <p><strong>Harvest Account ID</strong></p>
+    <input type="text" id="accountId" placeholder="e.g. 230698" style="width:100%; margin-bottom:8px;">
 
-  <label>Harvest Account ID</label>
-  <input type="text" id="accountId" placeholder="e.g. 230698">
-  <p class="help">Find at trello.com/power-ups/admin or id.getharvest.com</p>
+    <p><strong>Personal Access Token</strong></p>
+    <input type="password" id="token" placeholder="Your Harvest API token" style="width:100%; margin-bottom:12px;">
 
-  <label>Personal Access Token</label>
-  <input type="password" id="token" placeholder="Your Harvest API token">
-  <p class="help">Create at id.getharvest.com/oauth2/access_tokens/new</p>
-
-  <div class="section">
-    <label>Badge Visibility</label>
-    <select id="visibility">
-      <option value="full">Full (show hours)</option>
-      <option value="minimal">Minimal (only ✓)</option>
-      <option value="hidden">Hidden (no badges)</option>
-    </select>
+    <button class="mod-primary" id="save" style="width:100%">Save & Test</button>
+    <p id="status" style="margin-top:8px; font-size:12px;"></p>
   </div>
 
-  <button onclick="save()">Save</button>
-  <div id="status"></div>
-
   <script>
-    const t = TrelloPowerUp.iframe();
+    var t = TrelloPowerUp.iframe();
 
-    // Load existing settings
-    Promise.all([
-      t.loadSecret('harvestToken'),
-      t.loadSecret('harvestAccountId'),
-      t.get('board', 'shared', 'badgeVisibility', 'full')
-    ]).then(([token, accountId, visibility]) => {
-      if (token) document.getElementById('token').value = token;
-      if (accountId) document.getElementById('accountId').value = accountId;
-      document.getElementById('visibility').value = visibility;
+    // Load existing
+    t.get('member', 'private', 'harvestCredentials', null).then(function(data) {
+      if (data) {
+        document.getElementById('accountId').value = data.accountId || '';
+        document.getElementById('token').value = data.token || '';
+      }
     });
 
-    async function save() {
-      const token = document.getElementById('token').value.trim();
-      const accountId = document.getElementById('accountId').value.trim();
-      const visibility = document.getElementById('visibility').value;
+    document.getElementById('save').addEventListener('click', function() {
+      var token = document.getElementById('token').value.trim();
+      var accountId = document.getElementById('accountId').value.trim();
+      var status = document.getElementById('status');
 
       if (!token || !accountId) {
-        document.getElementById('status').innerHTML = '<div style="color:red">Please fill in both fields.</div>';
+        status.textContent = 'Please fill in both fields.';
+        status.style.color = 'red';
         return;
       }
 
-      // Test the connection
-      try {
-        const res = await fetch('https://api.harvestapp.com/v2/users/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Harvest-Account-Id': accountId,
-            'User-Agent': 'HarvestTrelloPowerUp'
-          }
-        });
-
+      // Test connection
+      fetch('https://api.harvestapp.com/v2/users/me', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Harvest-Account-Id': accountId,
+          'User-Agent': 'HarvestTrelloPowerUp'
+        }
+      }).then(function(res) {
         if (!res.ok) throw new Error('Invalid credentials');
-        const user = await res.json();
-
-        await t.storeSecret('harvestToken', token);
-        await t.storeSecret('harvestAccountId', accountId);
-        await t.set('board', 'shared', 'badgeVisibility', visibility);
-
-        document.getElementById('status').innerHTML = `<div class="success">Connected as ${user.first_name} ${user.last_name} ✓</div>`;
-
-        setTimeout(() => t.closePopup(), 1500);
-      } catch (err) {
-        document.getElementById('status').innerHTML = `<div style="color:red">Connection failed: ${err.message}</div>`;
-      }
-    }
+        return res.json();
+      }).then(function(user) {
+        return t.set('member', 'private', 'harvestCredentials', {
+          token: token,
+          accountId: accountId
+        }).then(function() {
+          status.textContent = 'Connected as ' + user.first_name + ' ' + user.last_name + ' ✓';
+          status.style.color = 'green';
+          setTimeout(function() { t.closePopup(); }, 1500);
+        });
+      }).catch(function(err) {
+        status.textContent = 'Error: ' + err.message;
+        status.style.color = 'red';
+      });
+    });
   </script>
 </body>
 </html>
