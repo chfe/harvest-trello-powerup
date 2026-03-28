@@ -5,12 +5,12 @@
   <link rel="stylesheet" href="https://p.trellocdn.com/power-up.css">
   <style>
     body { margin: 0; padding: 0; }
-    .form { padding: 8px; }
-    .field { margin-bottom: 10px; }
-    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ds-text-subtle, #5e6c84); margin-bottom: 4px; }
+    .form { padding: 16px 20px; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 11px; font-weight: 600; color: var(--ds-text-subtlest, #5e6c84); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .field input, .field select, .field textarea {
       width: 100%; padding: 10px 12px; font-size: 14px;
-      border: 1px solid var(--ds-border-input, #dfe1e6); border-radius: 3px;
+      border: 1px solid var(--ds-border-input, #dfe1e6); border-radius: 6px;
       background: var(--ds-background-input, #fafbfc); color: var(--ds-text, #172b4d);
       box-sizing: border-box;
     }
@@ -18,17 +18,35 @@
       border-color: var(--ds-border-focused, #0079bf); outline: none;
       box-shadow: 0 0 0 1px var(--ds-border-focused, #0079bf);
     }
-    .field textarea { resize: vertical; min-height: 50px; }
-    .row { display: flex; gap: 8px; }
-    .row .field { flex: 1; }
-    .actions { display: flex; gap: 8px; margin-top: 12px; }
-    .actions button { flex: 1; }
+    .field textarea { resize: vertical; min-height: 70px; }
+
+    /* Notes + Hours row like Harvest */
+    .notes-hours { display: flex; gap: 10px; margin-bottom: 12px; }
+    .notes-hours .field { margin-bottom: 0; }
+    .notes-hours .field-notes { flex: 1; }
+    .notes-hours .field-hours { width: 100px; }
+    .notes-hours .field-hours input {
+      font-size: 24px; font-weight: 600; text-align: center;
+      padding: 12px 8px; height: 100%;
+    }
+
+    /* Date row */
+    .meta-row { display: flex; gap: 10px; margin-bottom: 12px; }
+    .meta-row .field { margin-bottom: 0; flex: 1; }
+
+    .actions { display: flex; gap: 8px; margin-top: 16px; }
+    .actions button { padding: 10px 16px; font-size: 14px; }
+    .actions .mod-primary { flex: 1; }
     .btn-delete {
       background: none; border: 1px solid var(--ds-border, #dfe1e6);
-      color: var(--ds-text-danger, #de350b); border-radius: 3px; padding: 6px;
-      font-size: 13px; cursor: pointer;
+      color: var(--ds-text-danger, #de350b); border-radius: 6px; padding: 10px 16px;
+      font-size: 14px; cursor: pointer;
     }
     .btn-delete:hover { background: var(--ds-background-danger, #ffebe6); }
+
+    .context { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ds-border, #dfe1e6); font-size: 12px; color: var(--ds-text-subtlest, #5e6c84); }
+    .context strong { color: var(--ds-text, #172b4d); }
+
     .status { margin-top: 8px; font-size: 12px; text-align: center; }
     .status.error { color: var(--ds-text-danger, #de350b); }
     .status.success { color: var(--ds-text-success, #006644); }
@@ -49,7 +67,6 @@
     var t = TrelloPowerUp.iframe();
     var container = document.getElementById('content');
 
-    // Read params from URL
     var params = new URLSearchParams(window.location.search);
     var entryId = params.get('entryId');
     var isEdit = !!entryId;
@@ -77,42 +94,41 @@
         return;
       }
 
-      // Load entry first if editing (to get its project), then tasks
       var entryPromise = isEdit
         ? HarvestAPI.getEntry(creds.token, creds.accountId, entryId)
         : Promise.resolve(null);
 
       entryPromise.then(function(entry) {
-        // Use entry's project for tasks when editing
         var taskProjectId = (entry && entry.project) ? entry.project.id : projectId;
-        return HarvestAPI.getTaskAssignments(creds.token, creds.accountId, taskProjectId).then(function(tasks) {
-          return { tasks: tasks, entry: entry };
+        return Promise.all([
+          HarvestAPI.getTaskAssignments(creds.token, creds.accountId, taskProjectId),
+          HarvestAPI.request('/projects/' + taskProjectId, creds.token, creds.accountId)
+        ]).then(function(res) {
+          return { tasks: res[0], project: res[1], entry: entry };
         });
       }).then(function(data) {
-        var tasks = data.tasks;
-        var entry = data.entry;
-
-        if (!tasks || tasks.length === 0) {
+        if (!data.tasks || data.tasks.length === 0) {
           container.innerHTML = '<div class="no-project">No tasks found for this project.</div>';
           return;
         }
-
-        renderForm(creds, projectId, card, tasks, entry);
+        renderForm(creds, projectId, card, data.tasks, data.entry, data.project);
       });
     });
 
-    function renderForm(creds, projectId, card, tasks, entry) {
+    function renderForm(creds, projectId, card, tasks, entry, project) {
       var today = new Date().toISOString().split('T')[0];
+      var projectLabel = '';
+      if (project) {
+        projectLabel = (project.client ? escapeHtml(project.client.name) + ' — ' : '') + escapeHtml(project.name);
+      }
 
       var html = '<div class="form">';
 
-      // Date + Hours row
-      html += '<div class="row">';
-      html += '<div class="field"><label>Date</label>';
-      html += '<input type="date" id="spent_date" value="' + (entry ? entry.spent_date : today) + '"></div>';
-      html += '<div class="field"><label>Hours</label>';
-      html += '<input type="number" id="hours" step="0.25" min="0" value="' + (entry ? (entry.hours || '') : '0.5') + '" placeholder="0.00"></div>';
-      html += '</div>';
+      // Project (read-only context)
+      if (projectLabel) {
+        html += '<div class="field"><label>Project</label>';
+        html += '<div style="padding:10px 12px; font-size:14px; border:1px solid var(--ds-border-input,#dfe1e6); border-radius:6px; background:var(--ds-background-neutral,#f4f5f7); color:var(--ds-text,#172b4d);">' + projectLabel + '</div></div>';
+      }
 
       // Task
       html += '<div class="field"><label>Task</label>';
@@ -123,19 +139,33 @@
       });
       html += '</select></div>';
 
-      // Notes
-      html += '<div class="field"><label>Notes</label>';
+      // Notes + Hours (Harvest-style layout)
+      html += '<div class="notes-hours">';
+      html += '<div class="field field-notes"><label>Notes</label>';
       html += '<textarea id="notes" placeholder="What did you work on?">' + (entry ? escapeHtml(entry.notes || '') : '') + '</textarea></div>';
+      html += '<div class="field field-hours"><label>Hours</label>';
+      html += '<input type="number" id="hours" step="0.25" min="0" value="' + (entry ? (entry.hours || '') : '0.5') + '"></div>';
+      html += '</div>';
+
+      // Date
+      html += '<div class="field"><label>Date</label>';
+      html += '<input type="date" id="spent_date" value="' + (entry ? entry.spent_date : today) + '"></div>';
 
       // Buttons
       html += '<div class="actions">';
       if (isEdit) {
         html += '<button class="btn-delete" id="btnDelete">Delete</button>';
       }
-      html += '<button class="mod-primary" id="btnSave">' + (isEdit ? 'Update' : 'Create') + '</button>';
+      html += '<button class="mod-primary" id="btnSave">' + (isEdit ? 'Update Entry' : 'Save Entry') + '</button>';
       html += '</div>';
 
       html += '<div id="status" class="status"></div>';
+
+      // Context line
+      if (card.name) {
+        html += '<div class="context">Card: <strong>' + escapeHtml(card.name) + '</strong></div>';
+      }
+
       html += '</div>';
 
       container.innerHTML = html;
