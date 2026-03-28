@@ -32,9 +32,10 @@
     .entry:last-child { border-bottom: none; }
     .entry-date { color: var(--ds-text-subtlest, #999); min-width: 72px; flex-shrink: 0; }
     .entry-task { color: var(--ds-text-subtle, #666); min-width: 100px; flex-shrink: 0; }
-    .entry-notes { color: var(--ds-text, #333); flex: 1; overflow: hidden; text-overflow: ellipsis; }
-    .entry-hours { font-weight: 600; color: var(--ds-text, #333); min-width: 45px; text-align: right; flex-shrink: 0; }
-    .badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; flex-shrink: 0; white-space: nowrap; }
+    .entry-notes { color: var(--ds-text, #333); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .entry-right { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
+    .entry-hours { font-weight: 600; color: var(--ds-text, #333); min-width: 45px; text-align: right; }
+    .badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
     .badge-billable { background: var(--ds-background-information, #deebff); color: var(--ds-text-information, #0052cc); }
     .badge-nonbillable { background: var(--ds-background-warning, #fff7e6); color: var(--ds-text-warning, #974f0c); }
     .badge-invoiced { background: var(--ds-background-success, #e3fcef); color: var(--ds-text-success, #006644); }
@@ -118,6 +119,9 @@
           if (nonBillH > 0) {
             html += '<div class="summary-item"><div class="value">' + nonBillH.toFixed(2) + 'h</div><div class="label">Non-bill.</div></div>';
           }
+          if (invoicedH > 0) {
+            html += '<div class="summary-item"><div class="value" style="color:var(--ds-text-success,#006644)">' + invoicedH.toFixed(2) + 'h</div><div class="label">Invoiced</div></div>';
+          }
           if (uninvoicedH > 0) {
             html += '<div class="summary-item uninvoiced"><div class="value">' + uninvoicedH.toFixed(2) + 'h</div><div class="label">Unbilled</div></div>';
           }
@@ -144,8 +148,11 @@
             html += '<span class="entry-date">' + date + '</span>';
             html += '<span class="entry-task">' + task + '</span>';
             html += '<span class="entry-notes">' + notes + '</span>';
+            html += '<span class="entry-right">';
             html += '<span class="entry-hours">' + hours + 'h</span>';
+            html += billBadge;
             html += invoiceBadge;
+            html += '</span>';
             html += '</div>';
           });
           html += '</div>';
