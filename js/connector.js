@@ -121,6 +121,20 @@ TrelloPowerUp.initialize({
     }];
   },
 
+  'authorization-status': function(t) {
+    return t.get('member', 'private', 'harvestCredentials', null).then(function(creds) {
+      return { authorized: !!(creds && creds.token) };
+    });
+  },
+
+  'show-authorization': function(t) {
+    return t.popup({
+      title: 'Harvest Settings',
+      url: './settings.html',
+      height: 400
+    });
+  },
+
   'show-settings': function(t) {
     return t.popup({
       title: 'Harvest Settings',
