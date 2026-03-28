@@ -111,7 +111,7 @@
       html += '<div class="field"><label>Date</label>';
       html += '<input type="date" id="spent_date" value="' + (entry ? entry.spent_date : today) + '"></div>';
       html += '<div class="field"><label>Hours</label>';
-      html += '<input type="number" id="hours" step="0.25" min="0" value="' + (entry ? (entry.hours || '') : '') + '" placeholder="0.00" autofocus></div>';
+      html += '<input type="number" id="hours" step="0.25" min="0" value="' + (entry ? (entry.hours || '') : '0.5') + '" placeholder="0.00"></div>';
       html += '</div>';
 
       // Task
@@ -139,6 +139,7 @@
       html += '</div>';
 
       container.innerHTML = html;
+      setTimeout(function() { document.getElementById('hours').focus(); document.getElementById('hours').select(); }, 100);
 
       // Save handler
       document.getElementById('btnSave').addEventListener('click', function() {
