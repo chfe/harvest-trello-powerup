@@ -128,10 +128,10 @@
 
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') t.closeModal();
-      if (e.key === 'Enter' && !e.shiftKey && document.activeElement.tagName !== 'TEXTAREA') {
-        // Don't save if a Tom Select dropdown is open
-        var openDropdown = document.querySelector('.ts-dropdown:not([style*="display: none"])');
-        if (openDropdown) return;
+      if (e.key === 'Enter' && !e.shiftKey) {
+        // Don't save if inside a Tom Select or textarea
+        if (document.activeElement.closest('.ts-wrapper')) return;
+        if (document.activeElement.tagName === 'TEXTAREA') return;
         e.preventDefault();
         var btn = document.getElementById('btnSave');
         if (btn) btn.click();
