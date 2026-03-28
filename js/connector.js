@@ -23,7 +23,7 @@ TrelloPowerUp.initialize({
             if (visibility === 'hidden') return [];
 
             if (visibility === 'minimal') {
-              var minBadges = [{ text: '✓ tracked', color: 'green', icon: ICON_URL }];
+              var minBadges = [{ text: '✓ tracked', color: 'green' }];
               BADGE_CACHE[key] = { badges: minBadges, time: Date.now() };
               return minBadges;
             }
@@ -31,7 +31,6 @@ TrelloPowerUp.initialize({
             var badges = [{
               text: totals.totalHours.toFixed(1) + 'h',
               color: totals.unbillableHours > 0 ? 'orange' : 'sky',
-              icon: ICON_URL
             }];
 
             if (totals.uninvoicedHours > 0 && totals.uninvoicedHours < totals.totalHours) {
