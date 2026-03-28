@@ -25,16 +25,18 @@
 
     .entries { margin-top: 4px; }
     .entry {
-      display: flex; align-items: center; gap: 8px;
+      display: grid; grid-template-columns: 62px 1fr auto auto;
+      gap: 6px; align-items: center;
       padding: 6px 4px; border-bottom: 1px solid var(--ds-border, rgba(128,128,128,0.12));
       font-size: 12px;
     }
     .entry:last-child { border-bottom: none; }
-    .entry-date { color: var(--ds-text-subtlest, #999); flex-shrink: 0; }
-    .entry-task { color: var(--ds-text-subtle, #666); max-width: 90px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .entry-notes { color: var(--ds-text, #333); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .entry-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .entry-hours { font-weight: 600; color: var(--ds-text, #333); white-space: nowrap; text-align: right; }
+    .entry-date { color: var(--ds-text-subtlest, #999); }
+    .entry-info { overflow: hidden; }
+    .entry-task { color: var(--ds-text-subtle, #666); font-size: 11px; }
+    .entry-notes { color: var(--ds-text, #333); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .entry-badges { display: flex; gap: 4px; }
+    .entry-hours { font-weight: 600; color: var(--ds-text, #333); text-align: right; white-space: nowrap; }
     .badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
     .badge-billable { background: var(--ds-background-information, #deebff); color: var(--ds-text-information, #0052cc); }
     .badge-nonbillable { background: var(--ds-background-warning, #fff7e6); color: var(--ds-text-warning, #974f0c); }
@@ -146,13 +148,9 @@
 
             html += '<div class="entry">';
             html += '<span class="entry-date">' + date + '</span>';
-            html += '<span class="entry-task">' + task + '</span>';
-            html += '<span class="entry-notes">' + notes + '</span>';
-            html += '<span class="entry-right">';
+            html += '<div class="entry-info"><div class="entry-notes">' + notes + '</div><div class="entry-task">' + task + '</div></div>';
+            html += '<span class="entry-badges">' + billBadge + invoiceBadge + '</span>';
             html += '<span class="entry-hours">' + hours + 'h</span>';
-            html += billBadge;
-            html += invoiceBadge;
-            html += '</span>';
             html += '</div>';
           });
           html += '</div>';
