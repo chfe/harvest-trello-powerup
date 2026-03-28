@@ -66,7 +66,7 @@ TrelloPowerUp.initialize({
             return t.modal({
               title: 'New Time Entry',
               url: url,
-              height: 300
+              height: 500
             });
           });
         }
@@ -83,7 +83,7 @@ TrelloPowerUp.initialize({
         content: {
           type: 'iframe',
           url: t.signUrl('./card-back.html'),
-          height: 300
+          height: 500
         },
         action: {
           text: 'Log Time',
@@ -95,7 +95,7 @@ TrelloPowerUp.initialize({
               return t.modal({
                 title: 'New Time Entry',
                 url: url,
-                height: 300,
+                height: 500,
               });
             });
           }
