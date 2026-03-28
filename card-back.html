@@ -12,17 +12,10 @@
     .spinner { width: 16px; height: 16px; border: 2px solid var(--ds-border, #ddd); border-top-color: var(--ds-text-subtle, #666); border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .summary-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .summary {
-      display: flex; gap: 12px; padding: 8px 12px; flex: 1;
-      background: var(--ds-background-neutral, rgba(128,128,128,0.08)); border-radius: 6px;
+      display: flex; gap: 12px; padding: 8px 12px;
+      background: var(--ds-background-neutral, rgba(128,128,128,0.08)); border-radius: 6px; margin-bottom: 8px;
     }
-    .btn-toggle {
-      padding: 6px 12px; font-size: 12px;
-      color: var(--ds-text-subtle, #5e6c84); background: var(--ds-background-neutral, #f4f5f7);
-      border: none; border-radius: 3px; cursor: pointer; white-space: nowrap;
-    }
-    .btn-toggle:hover { background: var(--ds-background-neutral-hovered, #ebecf0); color: var(--ds-text, #172b4d); }
     .summary-item { text-align: center; min-width: 50px; }
     .summary-item .value { font-size: 15px; font-weight: 700; color: var(--ds-text, #333); }
     .summary-item .label { font-size: 9px; color: var(--ds-text-subtlest, #999); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -51,20 +44,7 @@
     .badge-invoiced { background: var(--ds-background-success, #e3fcef); color: var(--ds-text-success, #006644); }
     .badge-uninvoiced { background: var(--ds-background-danger, #ffebe6); color: var(--ds-text-danger, #de350b); }
 
-    .toolbar { display: flex; justify-content: flex-end; margin-bottom: 4px; }
-    .btn-add {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px 10px; font-size: 12px; font-weight: 500;
-      color: var(--ds-text-subtle, #5e6c84); background: var(--ds-background-neutral, #f4f5f7);
-      border: none; border-radius: 3px; cursor: pointer;
-    }
-    .btn-add:hover { background: var(--ds-background-neutral-hovered, #ebecf0); color: var(--ds-text, #172b4d); }
-
-    .collapsible { overflow: hidden; }
-    .collapsible.collapsed { display: none; }
-
     .empty { padding: 16px; text-align: center; color: var(--ds-text-subtlest, #aaa); font-size: 12px; }
-    .empty .btn-add { margin-top: 8px; }
     .error { padding: 16px; text-align: center; color: var(--ds-text-danger, #de350b); font-size: 12px; }
   </style>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
@@ -105,32 +85,10 @@
       });
     }
 
-    function bindToggle() {
-      var btn = document.getElementById('btnToggle');
-      if (!btn) return;
-      btn.addEventListener('click', function() {
-        var details = document.getElementById('details');
-        if (details.classList.contains('collapsed')) {
-          details.classList.remove('collapsed');
-          btn.textContent = 'Ausblenden ▲';
-        } else {
-          details.classList.add('collapsed');
-          btn.textContent = 'Details ▼';
-        }
-        resize();
-      });
-    }
-
     function bindEntryClicks() {
       document.querySelectorAll('.entry[data-entry-id]').forEach(function(el) {
         el.addEventListener('click', function(e) {
           openEntryForm(el.getAttribute('data-entry-id'), e);
-        });
-      });
-      document.querySelectorAll('.btn-add').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          openEntryForm(null, e);
         });
       });
     }
@@ -154,8 +112,7 @@
 
         HarvestAPI.getEntriesForCard(creds.token, creds.accountId, card.shortLink).then(function(entries) {
           if (!entries || entries.length === 0) {
-            container.innerHTML = '<div class="empty">No time entries for this card.<br><button class="btn-add">+ Add Entry</button></div>';
-            bindEntryClicks();
+            container.innerHTML = '<div class="empty">No time entries for this card.</div>';
             resize();
             return;
           }
@@ -172,8 +129,7 @@
 
           entries.sort(function(a, b) { return b.spent_date.localeCompare(a.spent_date); });
 
-          var html = '<div class="summary-row">';
-          html += '<div class="summary">';
+          var html = '<div class="summary">';
           html += '<div class="summary-item total"><div class="value">' + totalH.toFixed(2) + 'h</div><div class="label">Total</div></div>';
           html += '<div class="summary-item billable"><div class="value">' + billH.toFixed(2) + 'h</div><div class="label">Billable</div></div>';
           if (nonBillH > 0) {
@@ -187,11 +143,6 @@
           }
           html += '<div class="summary-item"><div class="value">' + entries.length + '</div><div class="label">Entries</div></div>';
           html += '</div>';
-          html += '<button class="btn-toggle" id="btnToggle">Details ▼</button>';
-          html += '</div>';
-
-          html += '<div class="collapsible" id="details">';
-          html += '<div class="toolbar"><button class="btn-add">+ Add Entry</button></div>';
           html += '<div class="entries">';
           entries.forEach(function(e) {
             var d = new Date(e.spent_date + 'T00:00:00');
@@ -216,11 +167,9 @@
             html += '</div>';
           });
           html += '</div>';
-          html += '</div>'; // close .collapsible
 
           container.innerHTML = html;
           bindEntryClicks();
-          bindToggle();
           resize();
         }).catch(function(err) {
           container.innerHTML = '<div class="error">Could not load Harvest data. Please try again.</div>';
