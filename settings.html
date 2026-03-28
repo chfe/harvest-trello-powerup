@@ -13,9 +13,14 @@
     <p><strong>Personal Access Token</strong></p>
     <input type="password" id="token" placeholder="Your Harvest API token" style="width:100%; margin-bottom:12px;">
 
+    <p><strong>Harvest Project</strong> <span style="font-size:11px; color:#999;">(for board-level totals)</span></p>
+    <select id="projectId" style="width:100%; margin-bottom:12px; padding:6px;">
+      <option value="">— none —</option>
+    </select>
+
     <p><strong>Card Badge</strong></p>
     <select id="visibility" style="width:100%; margin-bottom:12px; padding:6px;">
-      <option value="full">Show hours (e.g. ⏱ 2.5h)</option>
+      <option value="full">Show hours (e.g. 2.5h)</option>
       <option value="minimal">Show only ✓ tracked</option>
       <option value="hidden">Hidden</option>
     </select>
@@ -27,15 +32,44 @@
   <script>
     var t = TrelloPowerUp.iframe();
 
+    function loadProjects(token, accountId, selectedId) {
+      if (!token || !accountId) return;
+      var select = document.getElementById('projectId');
+
+      fetch('https://api.harvestapp.com/v2/projects?is_active=true&per_page=100', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Harvest-Account-Id': accountId,
+          'User-Agent': 'HarvestTrelloPowerUp'
+        }
+      }).then(function(res) {
+        if (!res.ok) return;
+        return res.json();
+      }).then(function(data) {
+        if (!data || !data.projects) return;
+        select.innerHTML = '<option value="">— none —</option>';
+        data.projects.forEach(function(p) {
+          var opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.client ? p.client.name + ' — ' + p.name : p.name;
+          if (selectedId && String(p.id) === String(selectedId)) opt.selected = true;
+          select.appendChild(opt);
+        });
+      });
+    }
+
     Promise.all([
       t.get('member', 'private', 'harvestCredentials', null),
-      t.get('board', 'shared', 'badgeVisibility', 'full')
+      t.get('board', 'shared', 'badgeVisibility', 'full'),
+      t.get('board', 'shared', 'harvestProjectId', null)
     ]).then(function(results) {
       var data = results[0];
       var vis = results[1];
+      var projId = results[2];
       if (data) {
         document.getElementById('accountId').value = data.accountId || '';
         document.getElementById('token').value = data.token || '';
+        loadProjects(data.token, data.accountId, projId);
       }
       document.getElementById('visibility').value = vis;
     });
@@ -44,6 +78,7 @@
       var token = document.getElementById('token').value.trim();
       var accountId = document.getElementById('accountId').value.trim();
       var visibility = document.getElementById('visibility').value;
+      var projectId = document.getElementById('projectId').value;
       var status = document.getElementById('status');
 
       if (!token || !accountId) {
@@ -64,7 +99,8 @@
       }).then(function(user) {
         return Promise.all([
           t.set('member', 'private', 'harvestCredentials', { token: token, accountId: accountId }),
-          t.set('board', 'shared', 'badgeVisibility', visibility)
+          t.set('board', 'shared', 'badgeVisibility', visibility),
+          t.set('board', 'shared', 'harvestProjectId', projectId || null)
         ]).then(function() {
           status.textContent = 'Connected as ' + user.first_name + ' ' + user.last_name + ' ✓';
           status.style.color = 'green';

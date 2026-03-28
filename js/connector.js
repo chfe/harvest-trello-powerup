@@ -1,5 +1,7 @@
 var BADGE_CACHE = {};
 var CACHE_TTL = 120000; // 2 minutes
+var ICON_URL = './img/harvest-logo-orange.svg';
+var ICON_WHITE_URL = './img/harvest-logo-white.svg';
 
 TrelloPowerUp.initialize({
   'card-badges': function(t) {
@@ -20,15 +22,23 @@ TrelloPowerUp.initialize({
             if (visibility === 'hidden') return [];
 
             if (visibility === 'minimal') {
-              var minBadges = [{ text: '✓ tracked', color: 'green' }];
+              var minBadges = [{ text: '✓ tracked', color: 'green', icon: ICON_URL }];
               BADGE_CACHE[key] = { badges: minBadges, time: Date.now() };
               return minBadges;
             }
 
             var badges = [{
-              text: '⏱ ' + totals.totalHours.toFixed(1) + 'h',
-              color: totals.unbillableHours > 0 ? 'orange' : 'sky'
+              text: totals.totalHours.toFixed(1) + 'h',
+              color: totals.unbillableHours > 0 ? 'orange' : 'sky',
+              icon: ICON_URL
             }];
+
+            if (totals.uninvoicedHours > 0 && totals.uninvoicedHours < totals.totalHours) {
+              badges.push({
+                text: totals.uninvoicedHours.toFixed(1) + 'h unbilled',
+                color: 'yellow'
+              });
+            }
 
             BADGE_CACHE[key] = { badges: badges, time: Date.now() };
             return badges;
@@ -58,6 +68,12 @@ TrelloPowerUp.initialize({
           if (totals.unbillableHours > 0) {
             badges.push({ title: 'Non-billable', text: totals.unbillableHours.toFixed(2) + 'h', color: 'yellow' });
           }
+          if (totals.uninvoicedHours > 0) {
+            badges.push({ title: 'Uninvoiced', text: totals.uninvoicedHours.toFixed(2) + 'h', color: 'red' });
+          }
+          if (totals.invoicedHours > 0) {
+            badges.push({ title: 'Invoiced', text: totals.invoicedHours.toFixed(2) + 'h', color: 'green' });
+          }
 
           return badges;
         }).catch(function() { return []; });
@@ -70,7 +86,7 @@ TrelloPowerUp.initialize({
       if (!creds || !creds.token) return [];
       return {
         title: 'Harvest Time Entries',
-        icon: '',
+        icon: ICON_URL,
         content: {
           type: 'iframe',
           url: t.signUrl('./card-back.html'),
@@ -82,12 +98,16 @@ TrelloPowerUp.initialize({
 
   'board-buttons': function(t) {
     return [{
-      text: 'Harvest Settings',
+      icon: {
+        dark: ICON_WHITE_URL,
+        light: ICON_URL
+      },
+      text: 'Harvest',
       callback: function(t) {
         return t.popup({
           title: 'Harvest Settings',
           url: './settings.html',
-          height: 320
+          height: 400
         });
       }
     }];
@@ -97,7 +117,7 @@ TrelloPowerUp.initialize({
     return t.popup({
       title: 'Harvest Settings',
       url: './settings.html',
-      height: 320
+      height: 400
     });
   }
 });

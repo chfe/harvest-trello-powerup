@@ -49,12 +49,36 @@ const HarvestAPI = {
     if (!entries || entries.length === 0) return null;
 
     let totalHours = 0, billableHours = 0, unbillableHours = 0;
+    let invoicedHours = 0, uninvoicedHours = 0;
     entries.forEach(e => {
-      totalHours += e.rounded_hours || 0;
-      if (e.billable) billableHours += e.rounded_hours || 0;
-      else unbillableHours += e.rounded_hours || 0;
+      const h = e.rounded_hours || 0;
+      totalHours += h;
+      if (e.billable) billableHours += h;
+      else unbillableHours += h;
+      if (e.is_billed) invoicedHours += h;
+      else uninvoicedHours += h;
     });
 
-    return { totalHours, billableHours, unbillableHours, count: entries.length };
+    return { totalHours, billableHours, unbillableHours, invoicedHours, uninvoicedHours, count: entries.length };
+  },
+
+  async getProjectTotals(token, accountId, projectId) {
+    if (!projectId) return null;
+
+    const data = await this.request('/time_entries', token, accountId, {
+      project_id: projectId,
+      is_billed: false,
+      per_page: 100
+    });
+    if (!data || !data.time_entries) return null;
+
+    let uninvoicedHours = 0, uninvoicedAmount = 0, count = 0;
+    data.time_entries.forEach(e => {
+      uninvoicedHours += e.rounded_hours || 0;
+      uninvoicedAmount += e.billable_rate ? (e.rounded_hours || 0) * e.billable_rate : 0;
+      count++;
+    });
+
+    return { uninvoicedHours, uninvoicedAmount, count };
   }
 };
