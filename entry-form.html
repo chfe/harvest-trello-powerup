@@ -18,23 +18,22 @@
       border-color: var(--ds-border-focused, #0079bf); outline: none;
       box-shadow: 0 0 0 1px var(--ds-border-focused, #0079bf);
     }
-    .field textarea { resize: vertical; min-height: 70px; }
+    .field textarea { resize: vertical; min-height: 60px; }
 
-    /* Notes + Hours row like Harvest */
+    .row { display: flex; gap: 10px; }
+    .row .field { flex: 1; margin-bottom: 8px; }
+
     .notes-hours { display: flex; gap: 10px; margin-bottom: 8px; }
     .notes-hours .field { margin-bottom: 0; }
     .notes-hours .field-notes { flex: 1; }
-    .notes-hours .field-hours { width: 100px; }
+    .notes-hours .field-hours { width: 90px; }
     .notes-hours .field-hours input {
-      font-size: 24px; font-weight: 600; text-align: center;
-      padding: 12px 8px; height: 100%;
+      font-size: 20px; font-weight: 600; text-align: center; padding: 10px 8px;
     }
 
-    /* Date row */
-    .meta-row { display: flex; gap: 10px; margin-bottom: 8px; }
-    .meta-row .field { margin-bottom: 0; flex: 1; }
+    .field-half { width: 50%; }
 
-    .actions { display: flex; gap: 8px; margin-top: 16px; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; }
     .actions button { padding: 10px 16px; font-size: 14px; }
     .actions .mod-primary { flex: 1; }
     .btn-delete {
@@ -44,7 +43,7 @@
     }
     .btn-delete:hover { background: var(--ds-background-danger, #ffebe6); }
 
-    .context { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--ds-border, #dfe1e6); font-size: 12px; color: var(--ds-text-subtlest, #5e6c84); }
+    .context { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ds-border, #dfe1e6); font-size: 12px; color: var(--ds-text-subtlest, #5e6c84); }
     .context strong { color: var(--ds-text, #172b4d); }
 
     .status { margin-top: 8px; font-size: 12px; text-align: center; }
@@ -69,6 +68,11 @@
 
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') t.closeModal();
+      if (e.key === 'Enter' && !e.shiftKey && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        var btn = document.getElementById('btnSave');
+        if (btn) btn.click();
+      }
     });
 
     var params = new URLSearchParams(window.location.search);
@@ -79,6 +83,8 @@
       name: params.get('cardName') || '',
       url: params.get('cardUrl') || ''
     };
+
+    var allProjects = [];
 
     Promise.all([
       t.get('member', 'private', 'harvestCredentials', null),
@@ -106,35 +112,39 @@
         var taskProjectId = (entry && entry.project) ? entry.project.id : projectId;
         return Promise.all([
           HarvestAPI.getTaskAssignments(creds.token, creds.accountId, taskProjectId),
-          HarvestAPI.request('/projects/' + taskProjectId, creds.token, creds.accountId)
+          HarvestAPI.request('/projects', creds.token, creds.accountId, { is_active: true, per_page: 100 })
         ]).then(function(res) {
-          return { tasks: res[0], project: res[1], entry: entry };
+          allProjects = (res[1] && res[1].projects) ? res[1].projects.slice().sort(function(a, b) {
+            var aName = (a.client ? a.client.name + ' — ' + a.name : a.name).toLowerCase();
+            var bName = (b.client ? b.client.name + ' — ' + b.name : b.name).toLowerCase();
+            return aName.localeCompare(bName, 'de');
+          }) : [];
+          return { tasks: res[0], entry: entry, currentProjectId: taskProjectId };
         });
       }).then(function(data) {
         if (!data.tasks || data.tasks.length === 0) {
           container.innerHTML = '<div class="no-project">No tasks found for this project.</div>';
           return;
         }
-        renderForm(creds, projectId, card, data.tasks, data.entry, data.project);
+        renderForm(creds, projectId, card, data.tasks, data.entry, data.currentProjectId);
       });
     });
 
-    function renderForm(creds, projectId, card, tasks, entry, project) {
+    function renderForm(creds, boardProjectId, card, tasks, entry, currentProjectId) {
       var today = new Date().toISOString().split('T')[0];
-      var projectLabel = '';
-      if (project) {
-        projectLabel = (project.client ? escapeHtml(project.client.name) + ' — ' : '') + escapeHtml(project.name);
-      }
 
       var html = '<div class="form">';
 
-      // Project (read-only context)
-      if (projectLabel) {
-        html += '<div class="field"><label>Project</label>';
-        html += '<div style="padding:10px 12px; font-size:14px; border:1px solid var(--ds-border-input,#dfe1e6); border-radius:6px; background:var(--ds-background-neutral,#f4f5f7); color:var(--ds-text,#172b4d);">' + projectLabel + '</div></div>';
-      }
-
-      // Task
+      // Project + Task row
+      html += '<div class="row">';
+      html += '<div class="field"><label>Project</label>';
+      html += '<select id="project_id">';
+      allProjects.forEach(function(p) {
+        var label = p.client ? escapeHtml(p.client.name) + ' — ' + escapeHtml(p.name) : escapeHtml(p.name);
+        var sel = (String(p.id) === String(currentProjectId)) ? ' selected' : '';
+        html += '<option value="' + p.id + '"' + sel + '>' + label + '</option>';
+      });
+      html += '</select></div>';
       html += '<div class="field"><label>Task</label>';
       html += '<select id="task_id">';
       tasks.forEach(function(task) {
@@ -142,17 +152,18 @@
         html += '<option value="' + task.id + '"' + sel + '>' + escapeHtml(task.name) + '</option>';
       });
       html += '</select></div>';
+      html += '</div>';
 
-      // Notes + Hours (Harvest-style layout)
+      // Notes + Hours
       html += '<div class="notes-hours">';
       html += '<div class="field field-notes"><label>Notes</label>';
-      html += '<textarea id="notes" placeholder="What did you work on?">' + (entry ? escapeHtml(entry.notes || '') : '') + '</textarea></div>';
+      html += '<textarea id="notes" placeholder="What did you work on?">' + (entry ? escapeHtml(entry.notes || '') : escapeHtml(card.name)) + '</textarea></div>';
       html += '<div class="field field-hours"><label>Hours</label>';
       html += '<input type="number" id="hours" step="0.25" min="0" value="' + (entry ? (entry.hours || '') : '0.5') + '"></div>';
       html += '</div>';
 
-      // Date
-      html += '<div class="field"><label>Date</label>';
+      // Date (half width)
+      html += '<div class="field field-half"><label>Date</label>';
       html += '<input type="date" id="spent_date" value="' + (entry ? entry.spent_date : today) + '"></div>';
 
       // Buttons
@@ -165,7 +176,6 @@
 
       html += '<div id="status" class="status"></div>';
 
-      // Context line
       if (card.name) {
         html += '<div class="context">Card: <strong>' + escapeHtml(card.name) + '</strong></div>';
       }
@@ -175,11 +185,28 @@
       container.innerHTML = html;
       setTimeout(function() { document.getElementById('hours').focus(); document.getElementById('hours').select(); }, 100);
 
+      // Project change → reload tasks
+      document.getElementById('project_id').addEventListener('change', function() {
+        var newProjectId = this.value;
+        var taskSelect = document.getElementById('task_id');
+        taskSelect.innerHTML = '<option>Loading…</option>';
+        HarvestAPI.getTaskAssignments(creds.token, creds.accountId, newProjectId).then(function(newTasks) {
+          taskSelect.innerHTML = '';
+          newTasks.forEach(function(task) {
+            var opt = document.createElement('option');
+            opt.value = task.id;
+            opt.textContent = task.name;
+            taskSelect.appendChild(opt);
+          });
+        });
+      });
+
       // Save handler
       document.getElementById('btnSave').addEventListener('click', function() {
         var spent_date = document.getElementById('spent_date').value;
         var hours = parseFloat(document.getElementById('hours').value);
         var task_id = parseInt(document.getElementById('task_id').value);
+        var project_id = parseInt(document.getElementById('project_id').value);
         var notes = document.getElementById('notes').value.trim();
         var status = document.getElementById('status');
 
@@ -196,11 +223,11 @@
           spent_date: spent_date,
           hours: hours,
           task_id: task_id,
+          project_id: project_id,
           notes: notes
         };
 
         if (!isEdit) {
-          payload.project_id = parseInt(projectId);
           payload.external_reference = {
             id: card.shortLink,
             group_id: 'trello',
