@@ -13,6 +13,13 @@
     <p><strong>Personal Access Token</strong></p>
     <input type="password" id="token" placeholder="Your Harvest API token" style="width:100%; margin-bottom:12px;">
 
+    <p><strong>Card Badge</strong></p>
+    <select id="visibility" style="width:100%; margin-bottom:12px; padding:6px;">
+      <option value="full">Show hours (e.g. ⏱ 2.5h)</option>
+      <option value="minimal">Show only ✓ tracked</option>
+      <option value="hidden">Hidden</option>
+    </select>
+
     <button class="mod-primary" id="save" style="width:100%">Save & Test</button>
     <p id="status" style="margin-top:8px; font-size:12px;"></p>
   </div>
@@ -20,17 +27,23 @@
   <script>
     var t = TrelloPowerUp.iframe();
 
-    // Load existing
-    t.get('member', 'private', 'harvestCredentials', null).then(function(data) {
+    Promise.all([
+      t.get('member', 'private', 'harvestCredentials', null),
+      t.get('board', 'shared', 'badgeVisibility', 'full')
+    ]).then(function(results) {
+      var data = results[0];
+      var vis = results[1];
       if (data) {
         document.getElementById('accountId').value = data.accountId || '';
         document.getElementById('token').value = data.token || '';
       }
+      document.getElementById('visibility').value = vis;
     });
 
     document.getElementById('save').addEventListener('click', function() {
       var token = document.getElementById('token').value.trim();
       var accountId = document.getElementById('accountId').value.trim();
+      var visibility = document.getElementById('visibility').value;
       var status = document.getElementById('status');
 
       if (!token || !accountId) {
@@ -39,7 +52,6 @@
         return;
       }
 
-      // Test connection
       fetch('https://api.harvestapp.com/v2/users/me', {
         headers: {
           'Authorization': 'Bearer ' + token,
@@ -50,10 +62,10 @@
         if (!res.ok) throw new Error('Invalid credentials');
         return res.json();
       }).then(function(user) {
-        return t.set('member', 'private', 'harvestCredentials', {
-          token: token,
-          accountId: accountId
-        }).then(function() {
+        return Promise.all([
+          t.set('member', 'private', 'harvestCredentials', { token: token, accountId: accountId }),
+          t.set('board', 'shared', 'badgeVisibility', visibility)
+        ]).then(function() {
           status.textContent = 'Connected as ' + user.first_name + ' ' + user.last_name + ' ✓';
           status.style.color = 'green';
           setTimeout(function() { t.closePopup(); }, 1500);

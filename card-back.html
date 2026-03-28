@@ -2,145 +2,114 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.css">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #333; padding: 8px; }
-    .loading { color: #999; padding: 12px; text-align: center; }
-    .no-config { color: #999; padding: 12px; text-align: center; }
-    .no-entries { color: #999; padding: 12px; text-align: center; font-style: italic; }
+    body { margin: 0; padding: 0; }
+    .container { padding: 4px 0; }
 
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; font-size: 10px; text-transform: uppercase; color: #999; padding: 4px 8px; border-bottom: 1px solid #eee; }
-    th.right { text-align: right; }
-    td { padding: 6px 8px; border-bottom: 1px solid #f5f5f5; vertical-align: top; }
-    td.right { text-align: right; }
-    td.hours { font-weight: 600; text-align: right; white-space: nowrap; }
-    td.date { color: #999; white-space: nowrap; font-size: 12px; }
-    td.task { color: #666; font-size: 12px; }
-    td.notes { color: #333; }
+    .summary {
+      display: flex; gap: 12px; padding: 8px 12px;
+      background: rgba(128,128,128,0.08); border-radius: 6px; margin-bottom: 8px;
+    }
+    .summary-item { text-align: center; min-width: 50px; }
+    .summary-item .value { font-size: 15px; font-weight: 700; }
+    .summary-item .label { font-size: 9px; color: var(--ds-text-subtlest, #999); text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-item.total .value { color: var(--ds-text-success, #22863a); }
+    .summary-item.billable .value { color: var(--ds-text-information, #0052cc); }
 
-    .badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px; }
-    .badge-billable { background: #e3f2fd; color: #1565c0; }
-    .badge-nonbillable { background: #fff3e0; color: #e65100; }
+    .entries { margin-top: 4px; }
+    .entry {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 6px 4px; border-bottom: 1px solid rgba(128,128,128,0.12);
+      font-size: 12px;
+    }
+    .entry:last-child { border-bottom: none; }
+    .entry-date { color: var(--ds-text-subtlest, #999); min-width: 72px; flex-shrink: 0; }
+    .entry-task { color: var(--ds-text-subtle, #666); min-width: 100px; flex-shrink: 0; }
+    .entry-notes { color: var(--ds-text, #333); flex: 1; overflow: hidden; text-overflow: ellipsis; }
+    .entry-hours { font-weight: 600; color: var(--ds-text, #333); min-width: 45px; text-align: right; flex-shrink: 0; }
+    .badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; flex-shrink: 0; white-space: nowrap; }
+    .badge-billable { background: var(--ds-background-information, #deebff); color: var(--ds-text-information, #0052cc); }
+    .badge-nonbillable { background: var(--ds-background-warning, #fff7e6); color: var(--ds-text-warning, #974f0c); }
 
-    .summary { display: flex; gap: 16px; padding: 8px; background: #f8f9fa; border-radius: 4px; margin-bottom: 8px; }
-    .summary-item { text-align: center; }
-    .summary-item .value { font-size: 18px; font-weight: 700; }
-    .summary-item .label { font-size: 10px; color: #999; text-transform: uppercase; }
-    .summary-item.billable .value { color: #1565c0; }
-    .summary-item.total .value { color: #2e7d32; }
+    .empty { padding: 16px; text-align: center; color: var(--ds-text-subtlest, #aaa); font-size: 12px; }
+    .error { padding: 16px; text-align: center; color: var(--ds-text-danger, #de350b); font-size: 12px; }
   </style>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script src="js/harvest-api.js"></script>
 </head>
 <body>
-  <div id="content"><div class="loading">Loading Harvest data...</div></div>
+  <div id="content" class="container"><div class="empty">Loading...</div></div>
 
   <script>
-    const t = TrelloPowerUp.iframe();
+    var t = TrelloPowerUp.iframe();
 
-    async function render() {
-      const container = document.getElementById('content');
+    t.render(function() {
+      Promise.all([
+        t.get('member', 'private', 'harvestCredentials', null),
+        t.card('shortLink')
+      ]).then(function(results) {
+        var creds = results[0];
+        var card = results[1];
+        var container = document.getElementById('content');
 
-      try {
-        const creds = await t.get('member', 'private', 'harvestCredentials', null);
         if (!creds || !creds.token) {
-          container.innerHTML = '<div class="no-config">Please configure Harvest in board settings.</div>';
+          container.innerHTML = '<div class="empty">Configure Harvest in board settings.</div>';
+          t.sizeTo('#content');
           return;
         }
 
-        const card = await t.card('shortLink', 'name');
-        const shortLink = card.shortLink;
-
-        const entries = await HarvestAPI.getEntriesForCard(creds.token, creds.accountId, shortLink);
-
-        if (!entries || entries.length === 0) {
-          container.innerHTML = '<div class="no-entries">No time entries for this card.</div>';
-          t.sizeTo('#content').catch(() => {});
-          return;
-        }
-
-        // Calculate totals
-        let totalHours = 0, billableHours = 0, nonBillableHours = 0, totalAmount = 0;
-        entries.forEach(e => {
-          totalHours += e.rounded_hours || 0;
-          if (e.billable) {
-            billableHours += e.rounded_hours || 0;
-            totalAmount += (e.billable_rate || 0) * (e.rounded_hours || 0);
-          } else {
-            nonBillableHours += e.rounded_hours || 0;
+        HarvestAPI.getEntriesForCard(creds.token, creds.accountId, card.shortLink).then(function(entries) {
+          if (!entries || entries.length === 0) {
+            container.innerHTML = '<div class="empty">No time entries for this card.</div>';
+            t.sizeTo('#content');
+            return;
           }
+
+          var totalH = 0, billH = 0, nonBillH = 0;
+          entries.forEach(function(e) {
+            totalH += e.rounded_hours || 0;
+            if (e.billable) billH += e.rounded_hours || 0;
+            else nonBillH += e.rounded_hours || 0;
+          });
+
+          entries.sort(function(a, b) { return b.spent_date.localeCompare(a.spent_date); });
+
+          var html = '<div class="summary">';
+          html += '<div class="summary-item total"><div class="value">' + totalH.toFixed(2) + 'h</div><div class="label">Total</div></div>';
+          html += '<div class="summary-item billable"><div class="value">' + billH.toFixed(2) + 'h</div><div class="label">Billable</div></div>';
+          if (nonBillH > 0) {
+            html += '<div class="summary-item"><div class="value">' + nonBillH.toFixed(2) + 'h</div><div class="label">Non-bill.</div></div>';
+          }
+          html += '<div class="summary-item"><div class="value">' + entries.length + '</div><div class="label">Entries</div></div>';
+          html += '</div>';
+
+          html += '<div class="entries">';
+          entries.forEach(function(e) {
+            var d = new Date(e.spent_date + 'T00:00:00');
+            var date = d.toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit', year:'2-digit'});
+            var task = e.task ? e.task.name : '';
+            var notes = (e.notes || '').substring(0, 80);
+            var hours = (e.rounded_hours || 0).toFixed(2);
+            var badge = e.billable
+              ? '<span class="badge badge-billable">billable</span>'
+              : '<span class="badge badge-nonbillable">non-bill.</span>';
+
+            html += '<div class="entry">';
+            html += '<span class="entry-date">' + date + '</span>';
+            html += '<span class="entry-task">' + task + '</span>';
+            html += '<span class="entry-notes">' + notes + '</span>';
+            html += '<span class="entry-hours">' + hours + 'h</span>';
+            html += badge;
+            html += '</div>';
+          });
+          html += '</div>';
+
+          container.innerHTML = html;
+          t.sizeTo('#content');
         });
-
-        // Sort by date descending
-        entries.sort((a, b) => b.spent_date.localeCompare(a.spent_date));
-
-        let html = '';
-
-        // Summary bar
-        html += `<div class="summary">
-          <div class="summary-item total">
-            <div class="value">${totalHours.toFixed(2)}h</div>
-            <div class="label">Total</div>
-          </div>
-          <div class="summary-item billable">
-            <div class="value">${billableHours.toFixed(2)}h</div>
-            <div class="label">Billable</div>
-          </div>`;
-
-        if (nonBillableHours > 0) {
-          html += `<div class="summary-item">
-            <div class="value">${nonBillableHours.toFixed(2)}h</div>
-            <div class="label">Non-billable</div>
-          </div>`;
-        }
-
-        html += `<div class="summary-item">
-            <div class="value">${entries.length}</div>
-            <div class="label">Entries</div>
-          </div>
-        </div>`;
-
-        // Entries table
-        html += `<table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Task</th>
-              <th>Notes</th>
-              <th class="right">Hours</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>`;
-
-        entries.forEach(e => {
-          const date = new Date(e.spent_date + 'T00:00:00').toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
-          const task = e.task ? e.task.name : '';
-          const notes = e.notes || '';
-          const hours = (e.rounded_hours || 0).toFixed(2);
-          const badge = e.billable
-            ? '<span class="badge badge-billable">billable</span>'
-            : '<span class="badge badge-nonbillable">non-billable</span>';
-
-          html += `<tr>
-            <td class="date">${date}</td>
-            <td class="task">${task}</td>
-            <td class="notes">${notes.length > 60 ? notes.substring(0, 60) + '...' : notes}</td>
-            <td class="hours">${hours}h</td>
-            <td>${badge}</td>
-          </tr>`;
-        });
-
-        html += '</tbody></table>';
-        container.innerHTML = html;
-        t.sizeTo('#content').catch(() => {});
-      } catch (err) {
-        container.innerHTML = `<div class="no-config">Error: ${err.message}</div>`;
-      }
-    }
-
-    render();
+      });
+    });
   </script>
 </body>
 </html>

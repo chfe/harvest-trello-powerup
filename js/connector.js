@@ -16,13 +16,21 @@ TrelloPowerUp.initialize({
         return HarvestAPI.getTotalHours(creds.token, creds.accountId, card.shortLink).then(function(totals) {
           if (!totals || totals.totalHours === 0) return [];
 
-          var badges = [{
-            text: totals.totalHours.toFixed(2) + 'h',
-            color: totals.unbillableHours > 0 ? 'yellow' : 'green'
-          }];
+          return t.get('board', 'shared', 'badgeVisibility', 'full').then(function(visibility) {
+            if (visibility === 'hidden') return [];
 
-          BADGE_CACHE[key] = { badges: badges, time: Date.now() };
-          return badges;
+            if (visibility === 'minimal') {
+              return [{ text: '✓ tracked', color: 'green' }];
+            }
+
+            var badges = [{
+              text: '⏱ ' + totals.totalHours.toFixed(1) + 'h',
+              color: totals.unbillableHours > 0 ? 'orange' : 'sky'
+            }];
+
+            BADGE_CACHE[key] = { badges: badges, time: Date.now() };
+            return badges;
+          });
         });
       });
     });
