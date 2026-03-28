@@ -35,7 +35,7 @@
     .entry-date { color: var(--ds-text-subtlest, #999); }
     .entry-info { overflow: hidden; }
     .entry-task { color: var(--ds-text-subtle, #666); font-size: 11px; }
-    .entry-notes { color: var(--ds-text, #333); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .entry-notes { color: var(--ds-text, #333); }
     .entry-badges { display: flex; gap: 4px; }
     .entry-hours { font-weight: 600; color: var(--ds-text, #333); text-align: right; white-space: nowrap; }
     .badge { font-size: 10px; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
@@ -147,7 +147,7 @@
             var d = new Date(e.spent_date + 'T00:00:00');
             var date = d.toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit', year:'2-digit'});
             var task = e.task ? escapeHtml(e.task.name) : '';
-            var notes = escapeHtml((e.notes || '').substring(0, 80));
+            var notes = escapeHtml(e.notes || '');
             var hours = (e.rounded_hours || 0).toFixed(2);
 
             var billBadge = e.billable
