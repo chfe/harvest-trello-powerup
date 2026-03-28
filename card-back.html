@@ -12,13 +12,17 @@
     .spinner { width: 16px; height: 16px; border: 2px solid var(--ds-border, #ddd); border-top-color: var(--ds-text-subtle, #666); border-radius: 50%; animation: spin 0.6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .summary-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .summary {
-      display: flex; gap: 12px; padding: 8px 12px;
-      background: var(--ds-background-neutral, rgba(128,128,128,0.08)); border-radius: 6px; margin-bottom: 8px;
-      cursor: pointer;
+      display: flex; gap: 12px; padding: 8px 12px; flex: 1;
+      background: var(--ds-background-neutral, rgba(128,128,128,0.08)); border-radius: 6px;
     }
-    .summary:hover { background: var(--ds-background-neutral-hovered, rgba(128,128,128,0.14)); }
-    .summary .toggle { color: var(--ds-text-subtlest, #999); font-size: 12px; display: flex; align-items: center; margin-left: auto; }
+    .btn-toggle {
+      padding: 6px 12px; font-size: 12px;
+      color: var(--ds-text-subtle, #5e6c84); background: var(--ds-background-neutral, #f4f5f7);
+      border: none; border-radius: 3px; cursor: pointer; white-space: nowrap;
+    }
+    .btn-toggle:hover { background: var(--ds-background-neutral-hovered, #ebecf0); color: var(--ds-text, #172b4d); }
     .summary-item { text-align: center; min-width: 50px; }
     .summary-item .value { font-size: 15px; font-weight: 700; color: var(--ds-text, #333); }
     .summary-item .label { font-size: 9px; color: var(--ds-text-subtlest, #999); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -102,17 +106,16 @@
     }
 
     function bindToggle() {
-      var summary = document.querySelector('.summary');
-      if (!summary) return;
-      summary.addEventListener('click', function() {
+      var btn = document.getElementById('btnToggle');
+      if (!btn) return;
+      btn.addEventListener('click', function() {
         var details = document.getElementById('details');
-        var icon = document.getElementById('toggleIcon');
         if (details.classList.contains('collapsed')) {
           details.classList.remove('collapsed');
-          icon.textContent = '▼';
+          btn.textContent = 'Ausblenden ▲';
         } else {
           details.classList.add('collapsed');
-          icon.textContent = '▶';
+          btn.textContent = 'Details ▼';
         }
         resize();
       });
@@ -169,7 +172,8 @@
 
           entries.sort(function(a, b) { return b.spent_date.localeCompare(a.spent_date); });
 
-          var html = '<div class="summary">';
+          var html = '<div class="summary-row">';
+          html += '<div class="summary">';
           html += '<div class="summary-item total"><div class="value">' + totalH.toFixed(2) + 'h</div><div class="label">Total</div></div>';
           html += '<div class="summary-item billable"><div class="value">' + billH.toFixed(2) + 'h</div><div class="label">Billable</div></div>';
           if (nonBillH > 0) {
@@ -182,7 +186,8 @@
             html += '<div class="summary-item uninvoiced"><div class="value">' + uninvoicedH.toFixed(2) + 'h</div><div class="label">Unbilled</div></div>';
           }
           html += '<div class="summary-item"><div class="value">' + entries.length + '</div><div class="label">Entries</div></div>';
-          html += '<span class="toggle" id="toggleIcon">▼</span>';
+          html += '</div>';
+          html += '<button class="btn-toggle" id="btnToggle">Details ▼</button>';
           html += '</div>';
 
           html += '<div class="collapsible" id="details">';
