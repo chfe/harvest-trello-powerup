@@ -5,7 +5,7 @@ var ICON_URL = BASE_URL + '/img/harvest-logo-orange.svg';
 var ICON_WHITE_URL = BASE_URL + '/img/harvest-logo-white.svg';
 
 TrelloPowerUp.initialize({
-  'card-badges': function(t) {
+  'card-badges': function(t, opts) {
     return t.card('shortLink').then(function(card) {
       return t.get('member', 'private', 'harvestCredentials', null).then(function(creds) {
         if (!creds || !creds.token) return [];
@@ -28,13 +28,10 @@ TrelloPowerUp.initialize({
               return minBadges;
             }
 
-            var badges = [
-              { text: 'Test', color: 'green' },
-              {
-                text: totals.totalHours.toFixed(1) + 'h',
-                color: totals.unbillableHours > 0 ? 'orange' : 'sky'
-              }
-            ];
+            var badges = [{
+              text: totals.totalHours.toFixed(1) + 'h',
+              color: totals.unbillableHours > 0 ? 'orange' : 'sky'
+            }];
 
             if (totals.uninvoicedHours > 0 && totals.uninvoicedHours < totals.totalHours) {
               badges.push({
