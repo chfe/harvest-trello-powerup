@@ -77,15 +77,20 @@
         return;
       }
 
-      // Load tasks, and entry if editing
-      var promises = [HarvestAPI.getTaskAssignments(creds.token, creds.accountId, projectId)];
-      if (isEdit) {
-        promises.push(HarvestAPI.getEntry(creds.token, creds.accountId, entryId));
-      }
+      // Load entry first if editing (to get its project), then tasks
+      var entryPromise = isEdit
+        ? HarvestAPI.getEntry(creds.token, creds.accountId, entryId)
+        : Promise.resolve(null);
 
-      Promise.all(promises).then(function(data) {
-        var tasks = data[0];
-        var entry = isEdit ? data[1] : null;
+      entryPromise.then(function(entry) {
+        // Use entry's project for tasks when editing
+        var taskProjectId = (entry && entry.project) ? entry.project.id : projectId;
+        return HarvestAPI.getTaskAssignments(creds.token, creds.accountId, taskProjectId).then(function(tasks) {
+          return { tasks: tasks, entry: entry };
+        });
+      }).then(function(data) {
+        var tasks = data.tasks;
+        var entry = data.entry;
 
         if (!tasks || tasks.length === 0) {
           container.innerHTML = '<div class="no-project">No tasks found for this project.</div>';
