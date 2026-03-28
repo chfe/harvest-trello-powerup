@@ -82,6 +82,23 @@ TrelloPowerUp.initialize({
     });
   },
 
+  'card-buttons': function(t) {
+    return t.get('member', 'private', 'harvestCredentials', null).then(function(creds) {
+      if (!creds || !creds.token) return [];
+      return [{
+        icon: ICON_URL,
+        text: 'Log Time',
+        callback: function(t) {
+          return t.popup({
+            title: 'New Time Entry',
+            url: './entry-form.html',
+            height: 340
+          });
+        }
+      }];
+    });
+  },
+
   'card-back-section': function(t) {
     return t.get('member', 'private', 'harvestCredentials', null).then(function(creds) {
       if (!creds || !creds.token) return [];

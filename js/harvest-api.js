@@ -12,6 +12,15 @@ const HarvestAPI = {
     await t.set('member', 'private', 'harvestCredentials', { token, accountId });
   },
 
+  _headers(token, accountId) {
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Harvest-Account-Id': accountId,
+      'Content-Type': 'application/json',
+      'User-Agent': 'HarvestTrelloPowerUp'
+    };
+  },
+
   async request(path, token, accountId, params = {}) {
     if (!token || !accountId) return null;
 
@@ -22,11 +31,7 @@ const HarvestAPI = {
 
     try {
       const res = await fetch(url.toString(), {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Harvest-Account-Id': accountId,
-          'User-Agent': 'HarvestTrelloPowerUp'
-        }
+        headers: this._headers(token, accountId)
       });
       if (!res.ok) return null;
       return res.json();
@@ -80,5 +85,62 @@ const HarvestAPI = {
     });
 
     return { uninvoicedHours, uninvoicedAmount, count };
+  },
+
+  async getTaskAssignments(token, accountId, projectId) {
+    if (!projectId) return [];
+    const data = await this.request(`/projects/${projectId}/task_assignments`, token, accountId, {
+      is_active: true,
+      per_page: 100
+    });
+    if (!data || !data.task_assignments) return [];
+    return data.task_assignments.map(ta => ({
+      id: ta.task.id,
+      name: ta.task.name,
+      billable: ta.billable
+    }));
+  },
+
+  async getEntry(token, accountId, entryId) {
+    const res = await fetch(`${this.BASE_URL}/time_entries/${entryId}`, {
+      headers: this._headers(token, accountId)
+    });
+    if (!res.ok) return null;
+    return res.json();
+  },
+
+  async createEntry(token, accountId, data) {
+    const res = await fetch(`${this.BASE_URL}/time_entries`, {
+      method: 'POST',
+      headers: this._headers(token, accountId),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
+    }
+    return res.json();
+  },
+
+  async updateEntry(token, accountId, entryId, data) {
+    const res = await fetch(`${this.BASE_URL}/time_entries/${entryId}`, {
+      method: 'PATCH',
+      headers: this._headers(token, accountId),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
+    }
+    return res.json();
+  },
+
+  async deleteEntry(token, accountId, entryId) {
+    const res = await fetch(`${this.BASE_URL}/time_entries/${entryId}`, {
+      method: 'DELETE',
+      headers: this._headers(token, accountId)
+    });
+    if (!res.ok) throw new Error('Delete failed');
+    return true;
   }
 };

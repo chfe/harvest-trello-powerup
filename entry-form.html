@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.css">
+  <style>
+    body { margin: 0; padding: 0; }
+    .form { padding: 8px; }
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ds-text-subtle, #5e6c84); margin-bottom: 4px; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 6px 8px; font-size: 13px;
+      border: 1px solid var(--ds-border-input, #dfe1e6); border-radius: 3px;
+      background: var(--ds-background-input, #fafbfc); color: var(--ds-text, #172b4d);
+      box-sizing: border-box;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--ds-border-focused, #0079bf); outline: none;
+      box-shadow: 0 0 0 1px var(--ds-border-focused, #0079bf);
+    }
+    .field textarea { resize: vertical; min-height: 50px; }
+    .row { display: flex; gap: 8px; }
+    .row .field { flex: 1; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; }
+    .actions button { flex: 1; }
+    .btn-delete {
+      background: none; border: 1px solid var(--ds-border, #dfe1e6);
+      color: var(--ds-text-danger, #de350b); border-radius: 3px; padding: 6px;
+      font-size: 13px; cursor: pointer;
+    }
+    .btn-delete:hover { background: var(--ds-background-danger, #ffebe6); }
+    .status { margin-top: 8px; font-size: 12px; text-align: center; }
+    .status.error { color: var(--ds-text-danger, #de350b); }
+    .status.success { color: var(--ds-text-success, #006644); }
+    .loader { display: flex; align-items: center; justify-content: center; padding: 40px; gap: 8px; color: var(--ds-text-subtlest, #5e6c84); font-size: 13px; }
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--ds-border, #dfe1e6); border-top-color: var(--ds-text-subtle, #5e6c84); border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .no-project { padding: 20px; text-align: center; font-size: 13px; color: var(--ds-text-subtlest, #5e6c84); }
+  </style>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script src="js/harvest-api.js"></script>
+</head>
+<body>
+  <div id="content">
+    <div class="loader"><div class="spinner"></div> Loading…</div>
+  </div>
+
+  <script>
+    var t = TrelloPowerUp.iframe();
+    var container = document.getElementById('content');
+
+    // Read params from URL
+    var params = new URLSearchParams(window.location.search);
+    var entryId = params.get('entryId');
+    var isEdit = !!entryId;
+
+    Promise.all([
+      t.get('member', 'private', 'harvestCredentials', null),
+      t.get('board', 'shared', 'harvestProjectId', null),
+      t.card('shortLink', 'name', 'url')
+    ]).then(function(results) {
+      var creds = results[0];
+      var projectId = results[1];
+      var card = results[2];
+
+      if (!creds || !creds.token) {
+        container.innerHTML = '<div class="no-project">No Harvest credentials configured.</div>';
+        return;
+      }
+      if (!projectId) {
+        container.innerHTML = '<div class="no-project">No Harvest project linked to this board.<br>Set it in Harvest Settings (board button).</div>';
+        return;
+      }
+
+      // Load tasks, and entry if editing
+      var promises = [HarvestAPI.getTaskAssignments(creds.token, creds.accountId, projectId)];
+      if (isEdit) {
+        promises.push(HarvestAPI.getEntry(creds.token, creds.accountId, entryId));
+      }
+
+      Promise.all(promises).then(function(data) {
+        var tasks = data[0];
+        var entry = isEdit ? data[1] : null;
+
+        if (!tasks || tasks.length === 0) {
+          container.innerHTML = '<div class="no-project">No tasks found for this project.</div>';
+          return;
+        }
+
+        renderForm(creds, projectId, card, tasks, entry);
+      });
+    });
+
+    function renderForm(creds, projectId, card, tasks, entry) {
+      var today = new Date().toISOString().split('T')[0];
+
+      var html = '<div class="form">';
+
+      // Date + Hours row
+      html += '<div class="row">';
+      html += '<div class="field"><label>Date</label>';
+      html += '<input type="date" id="spent_date" value="' + (entry ? entry.spent_date : today) + '"></div>';
+      html += '<div class="field"><label>Hours</label>';
+      html += '<input type="number" id="hours" step="0.25" min="0" value="' + (entry ? (entry.hours || '') : '') + '" placeholder="0.00" autofocus></div>';
+      html += '</div>';
+
+      // Task
+      html += '<div class="field"><label>Task</label>';
+      html += '<select id="task_id">';
+      tasks.forEach(function(task) {
+        var sel = (entry && entry.task && entry.task.id === task.id) ? ' selected' : '';
+        html += '<option value="' + task.id + '"' + sel + '>' + escapeHtml(task.name) + '</option>';
+      });
+      html += '</select></div>';
+
+      // Notes
+      html += '<div class="field"><label>Notes</label>';
+      html += '<textarea id="notes" placeholder="What did you work on?">' + (entry ? escapeHtml(entry.notes || '') : '') + '</textarea></div>';
+
+      // Buttons
+      html += '<div class="actions">';
+      if (isEdit) {
+        html += '<button class="btn-delete" id="btnDelete">Delete</button>';
+      }
+      html += '<button class="mod-primary" id="btnSave">' + (isEdit ? 'Update' : 'Create') + '</button>';
+      html += '</div>';
+
+      html += '<div id="status" class="status"></div>';
+      html += '</div>';
+
+      container.innerHTML = html;
+
+      // Save handler
+      document.getElementById('btnSave').addEventListener('click', function() {
+        var spent_date = document.getElementById('spent_date').value;
+        var hours = parseFloat(document.getElementById('hours').value);
+        var task_id = parseInt(document.getElementById('task_id').value);
+        var notes = document.getElementById('notes').value.trim();
+        var status = document.getElementById('status');
+
+        if (!spent_date || !hours || hours <= 0) {
+          status.className = 'status error';
+          status.textContent = 'Please enter date and hours.';
+          return;
+        }
+
+        status.className = 'status';
+        status.textContent = 'Saving…';
+
+        var payload = {
+          spent_date: spent_date,
+          hours: hours,
+          task_id: task_id,
+          notes: notes
+        };
+
+        if (!isEdit) {
+          payload.project_id = parseInt(projectId);
+          payload.external_reference = {
+            id: card.shortLink,
+            group_id: 'trello',
+            permalink: card.url,
+            service: 'trello.com',
+            service_icon_url: 'https://trello.com/favicon.ico'
+          };
+        }
+
+        var promise = isEdit
+          ? HarvestAPI.updateEntry(creds.token, creds.accountId, entryId, payload)
+          : HarvestAPI.createEntry(creds.token, creds.accountId, payload);
+
+        promise.then(function() {
+          status.className = 'status success';
+          status.textContent = isEdit ? 'Updated!' : 'Created!';
+          // Invalidate badge cache
+          if (window.parent && window.parent.BADGE_CACHE) {
+            delete window.parent.BADGE_CACHE['b_' + card.shortLink];
+          }
+          setTimeout(function() { t.closePopup(); }, 800);
+        }).catch(function(err) {
+          status.className = 'status error';
+          status.textContent = 'Error: ' + err.message;
+        });
+      });
+
+      // Delete handler
+      if (isEdit) {
+        document.getElementById('btnDelete').addEventListener('click', function() {
+          if (!confirm('Delete this time entry?')) return;
+          var status = document.getElementById('status');
+          status.className = 'status';
+          status.textContent = 'Deleting…';
+
+          HarvestAPI.deleteEntry(creds.token, creds.accountId, entryId).then(function() {
+            status.className = 'status success';
+            status.textContent = 'Deleted!';
+            setTimeout(function() { t.closePopup(); }, 800);
+          }).catch(function(err) {
+            status.className = 'status error';
+            status.textContent = 'Error: ' + err.message;
+          });
+        });
+      }
+    }
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
