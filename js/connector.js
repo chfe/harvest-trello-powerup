@@ -29,13 +29,13 @@ TrelloPowerUp.initialize({
             }
 
             var badges = [{
-              text: totals.totalHours.toFixed(1) + 'h',
+              text: totals.totalHours.toFixed(2) + 'h',
               color: totals.unbillableHours > 0 ? 'orange' : 'sky'
             }];
 
             if (totals.uninvoicedHours > 0 && totals.uninvoicedHours < totals.totalHours) {
               badges.push({
-                text: totals.uninvoicedHours.toFixed(1) + 'h unbilled',
+                text: totals.uninvoicedHours.toFixed(2) + 'h unbilled',
                 color: 'yellow'
               });
             }
