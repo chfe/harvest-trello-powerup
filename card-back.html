@@ -46,6 +46,61 @@
 
     .empty { padding: 16px; text-align: center; color: var(--ds-text-subtlest, #aaa); font-size: 12px; }
     .error { padding: 16px; text-align: center; color: var(--ds-text-danger, #de350b); font-size: 12px; }
+
+    .attach-bar {
+      display: flex; justify-content: flex-end; padding: 4px 4px 8px;
+    }
+    .attach-bar button {
+      background: none; border: 1px dashed var(--ds-border, #dfe1e6);
+      color: var(--ds-text-subtle, #5e6c84); border-radius: 3px;
+      padding: 4px 10px; font-size: 11px; cursor: pointer;
+    }
+    .attach-bar button:hover { background: var(--ds-background-neutral-hovered, rgba(128,128,128,0.08)); color: var(--ds-text, #172b4d); }
+
+    .picker-panel {
+      border: 1px solid var(--ds-border, #dfe1e6); border-radius: 4px;
+      padding: 8px; margin-bottom: 8px;
+      background: var(--ds-background-neutral, rgba(128,128,128,0.05));
+    }
+    .picker-panel .picker-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; font-weight: 600; color: var(--ds-text-subtle, #5e6c84);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+    }
+    .picker-panel .picker-header .close {
+      background: none; border: none; cursor: pointer; color: var(--ds-text-subtlest, #999);
+      font-size: 14px; padding: 0 4px;
+    }
+    .picker-panel .picker-empty {
+      padding: 8px; text-align: center; color: var(--ds-text-subtlest, #999); font-size: 11px;
+    }
+    .picker-row {
+      display: grid; grid-template-columns: auto 62px 1fr auto;
+      gap: 6px; align-items: start;
+      padding: 4px; border-bottom: 1px solid var(--ds-border, rgba(128,128,128,0.1));
+      font-size: 12px;
+    }
+    .picker-row:last-of-type { border-bottom: none; }
+    .picker-row input[type=checkbox] { margin-top: 3px; }
+    .picker-row .date { color: var(--ds-text-subtlest, #999); font-size: 11px; }
+    .picker-row .info { min-width: 0; overflow: hidden; }
+    .picker-row .info .notes { color: var(--ds-text, #333); word-wrap: break-word; white-space: pre-wrap; }
+    .picker-row .info .task { color: var(--ds-text-subtle, #666); font-size: 10px; }
+    .picker-row .hours { font-weight: 600; color: var(--ds-text, #333); text-align: right; white-space: nowrap; }
+    .picker-footer {
+      display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px;
+    }
+    .picker-footer button {
+      padding: 4px 10px; font-size: 11px; border-radius: 3px; cursor: pointer;
+    }
+    .picker-footer .confirm {
+      background: var(--ds-background-brand-bold, #0052cc); color: white; border: none;
+    }
+    .picker-footer .confirm:disabled { background: #a5adba; cursor: not-allowed; }
+    .picker-footer .cancel {
+      background: none; color: var(--ds-text-subtle, #5e6c84);
+      border: 1px solid var(--ds-border, #dfe1e6);
+    }
   </style>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script src="js/harvest-api.js"></script>
@@ -58,6 +113,8 @@
   <script>
     var t = TrelloPowerUp.iframe();
     var currentCard = null;
+    var currentCreds = null;
+    var currentProjectId = null;
     var renderCount = 0;
 
     function resize() {
@@ -92,16 +149,129 @@
       });
     }
 
+    function buildAttachBarHtml() {
+      if (!currentProjectId) return '';
+      return '<div class="attach-bar"><button id="openAttachPicker">+ Attach unassigned entries</button></div>'
+        + '<div id="attachPickerSlot"></div>';
+    }
+
+    function bindAttachBar() {
+      var btn = document.getElementById('openAttachPicker');
+      if (btn) btn.addEventListener('click', openAttachPicker);
+    }
+
+    function openAttachPicker() {
+      var slot = document.getElementById('attachPickerSlot');
+      if (!slot) return;
+      slot.innerHTML = '<div class="picker-panel"><div class="picker-header">Unassigned entries<button class="close" id="closePicker">✕</button></div><div class="loader"><div class="spinner"></div> Loading…</div></div>';
+      document.getElementById('closePicker').addEventListener('click', function() { slot.innerHTML = ''; resize(); });
+      resize();
+
+      HarvestAPI.requestAllPages('/time_entries', currentCreds.token, currentCreds.accountId,
+        { project_id: currentProjectId }, 'time_entries').then(function(entries) {
+        var unassigned = (entries || []).filter(function(e) {
+          return !e.external_reference || !e.external_reference.id;
+        }).sort(function(a, b) {
+          return (b.spent_date || '').localeCompare(a.spent_date || '');
+        });
+        renderPicker(unassigned);
+      }).catch(function() {
+        slot.innerHTML = '<div class="picker-panel"><div class="error">Could not load entries.</div></div>';
+        resize();
+      });
+    }
+
+    function renderPicker(unassigned) {
+      var slot = document.getElementById('attachPickerSlot');
+      if (!slot) return;
+
+      var html = '<div class="picker-panel">';
+      html += '<div class="picker-header">Unassigned entries<button class="close" id="closePicker">✕</button></div>';
+
+      if (unassigned.length === 0) {
+        html += '<div class="picker-empty">No unassigned entries in this project.</div>';
+        html += '</div>';
+        slot.innerHTML = html;
+        document.getElementById('closePicker').addEventListener('click', function() { slot.innerHTML = ''; resize(); });
+        resize();
+        return;
+      }
+
+      unassigned.forEach(function(e) {
+        var d = new Date((e.spent_date || '') + 'T00:00:00');
+        var date = e.spent_date ? d.toLocaleDateString('de-CH', {day:'2-digit', month:'2-digit', year:'2-digit'}) : '';
+        var task = e.task ? escapeHtml(e.task.name) : '';
+        var notes = (e.notes || '').trim();
+        var notesHtml = notes ? escapeHtml(notes) : '<em style="color:#999">(no notes)</em>';
+        var hours = (e.rounded_hours || 0).toFixed(2);
+
+        html += '<div class="picker-row">';
+        html += '<input type="checkbox" class="pick-check" data-entry-id="' + e.id + '">';
+        html += '<span class="date">' + date + '</span>';
+        html += '<div class="info"><div class="notes">' + notesHtml + '</div>';
+        if (task) html += '<div class="task">' + task + '</div>';
+        html += '</div>';
+        html += '<span class="hours">' + hours + 'h</span>';
+        html += '</div>';
+      });
+
+      html += '<div class="picker-footer">';
+      html += '<button class="cancel" id="closePicker">Cancel</button>';
+      html += '<button class="confirm" id="confirmAttach" disabled>Attach 0</button>';
+      html += '</div></div>';
+
+      slot.innerHTML = html;
+      document.getElementById('closePicker').addEventListener('click', function() { slot.innerHTML = ''; resize(); });
+
+      var confirmBtn = document.getElementById('confirmAttach');
+      var checks = slot.querySelectorAll('.pick-check');
+      function updateConfirm() {
+        var n = slot.querySelectorAll('.pick-check:checked').length;
+        confirmBtn.disabled = n === 0;
+        confirmBtn.textContent = 'Attach ' + n;
+      }
+      checks.forEach(function(cb) { cb.addEventListener('change', updateConfirm); });
+
+      confirmBtn.addEventListener('click', function() {
+        var ids = Array.prototype.map.call(slot.querySelectorAll('.pick-check:checked'), function(cb) {
+          return cb.getAttribute('data-entry-id');
+        });
+        if (ids.length === 0) return;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Attaching…';
+        var promises = ids.map(function(id) {
+          return HarvestAPI.setEntryExternalReference(
+            currentCreds.token, currentCreds.accountId, id, currentCard.shortLink, currentCard.url
+          );
+        });
+        Promise.all(promises).then(function() {
+          slot.innerHTML = '';
+          loadEntries();
+        }).catch(function() {
+          confirmBtn.disabled = false;
+          updateConfirm();
+          slot.querySelector('.picker-panel').insertAdjacentHTML('beforeend', '<div class="error">Some entries failed to attach.</div>');
+          resize();
+        });
+      });
+
+      resize();
+    }
+
     function loadEntries() {
       var container = document.getElementById('content');
 
       Promise.all([
         t.get('member', 'private', 'harvestCredentials', null),
-        t.card('shortLink', 'name', 'url')
+        t.card('shortLink', 'name', 'url'),
+        t.get('board', 'shared', 'harvestProjectId', null)
       ]).then(function(results) {
         var creds = results[0];
         var card = results[1];
+        var projectId = results[2];
         currentCard = card;
+        currentCreds = creds;
+        currentProjectId = projectId;
 
         if (!creds || !creds.token) {
           container.innerHTML = '';
@@ -111,7 +281,8 @@
 
         HarvestAPI.getEntriesForCard(creds.token, creds.accountId, card.shortLink).then(function(entries) {
           if (!entries || entries.length === 0) {
-            container.innerHTML = '<div class="empty">No time entries for this card.</div>';
+            container.innerHTML = buildAttachBarHtml() + '<div class="empty">No time entries for this card.</div>';
+            bindAttachBar();
             resize();
             return;
           }
@@ -128,7 +299,8 @@
 
           entries.sort(function(a, b) { return b.spent_date.localeCompare(a.spent_date); });
 
-          var html = '<div class="summary">';
+          var html = buildAttachBarHtml();
+          html += '<div class="summary">';
           html += '<div class="summary-item total"><div class="value">' + totalH.toFixed(2) + 'h</div><div class="label">Total</div></div>';
           html += '<div class="summary-item billable"><div class="value">' + billH.toFixed(2) + 'h</div><div class="label">Billable</div></div>';
           if (nonBillH > 0) {
@@ -168,6 +340,7 @@
           html += '</div>';
 
           container.innerHTML = html;
+          bindAttachBar();
           bindEntryClicks();
           resize();
         }).catch(function(err) {
