@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.css">
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--ds-background-default, #ffffff); }
+    .container { padding: 12px 16px 80px; }
+    .loader { display: flex; align-items: center; justify-content: center; padding: 30px; gap: 8px; color: var(--ds-text-subtlest, #5e6c84); font-size: 13px; }
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--ds-border, #dfe1e6); border-top-color: var(--ds-text-subtle, #5e6c84); border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { padding: 30px 16px; text-align: center; color: var(--ds-text-subtlest, #5e6c84); font-size: 13px; }
+    .error { padding: 16px; text-align: center; color: var(--ds-text-danger, #de350b); font-size: 13px; }
+
+    .intro { font-size: 13px; color: var(--ds-text-subtle, #5e6c84); margin-bottom: 10px; }
+    .intro strong { color: var(--ds-text, #172b4d); }
+
+    .toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 0 8px; font-size: 11px;
+    }
+    .toolbar a {
+      color: var(--ds-text-brand, #0052cc); cursor: pointer;
+      text-decoration: none;
+    }
+    .toolbar a:hover { text-decoration: underline; }
+    .toolbar .count { color: var(--ds-text-subtle, #5e6c84); }
+
+    .entry-list { border: 1px solid var(--ds-border, #dfe1e6); border-radius: 4px; overflow: hidden; }
+    .entry-row {
+      display: grid; grid-template-columns: auto 72px 1fr auto;
+      gap: 10px; align-items: start;
+      padding: 8px 10px; border-bottom: 1px solid var(--ds-border, #dfe1e6);
+      font-size: 13px; cursor: pointer;
+    }
+    .entry-row:last-child { border-bottom: none; }
+    .entry-row:hover { background: var(--ds-background-neutral-hovered, #ebecf0); }
+    .entry-row.checked { background: var(--ds-background-information, #deebff); }
+    .entry-row input[type=checkbox] { margin-top: 3px; cursor: pointer; }
+    .entry-row .date { color: var(--ds-text-subtlest, #5e6c84); font-size: 12px; }
+    .entry-row .info { min-width: 0; }
+    .entry-row .info .notes { color: var(--ds-text, #172b4d); word-wrap: break-word; white-space: pre-wrap; }
+    .entry-row .info .task { color: var(--ds-text-subtle, #5e6c84); font-size: 11px; margin-top: 2px; }
+    .entry-row .hours { font-weight: 600; color: var(--ds-text, #172b4d); text-align: right; white-space: nowrap; }
+
+    .footer {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      background: var(--ds-background-default, #ffffff);
+      border-top: 1px solid var(--ds-border, #dfe1e6);
+      padding: 10px 16px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 -2px 6px rgba(9, 30, 66, 0.08);
+    }
+    .footer .selection { font-size: 12px; color: var(--ds-text-subtle, #5e6c84); font-weight: 600; }
+    .footer .buttons { display: flex; gap: 8px; }
+    .footer button {
+      padding: 6px 14px; font-size: 13px; border-radius: 3px; cursor: pointer;
+      border: none; font-weight: 500;
+    }
+    .footer .cancel {
+      background: var(--ds-background-neutral, #f4f5f7); color: var(--ds-text, #172b4d);
+      border: 1px solid var(--ds-border, #dfe1e6);
+    }
+    .footer .confirm { background: var(--ds-background-brand-bold, #0052cc); color: white; }
+    .footer .confirm:disabled { background: #a5adba; cursor: not-allowed; }
+  </style>
+  <script src="https://p.trellocdn.com/power-up.min.js"></script>
+  <script src="js/harvest-api.js"></script>
+</head>
+<body>
+  <div id="content" class="container">
+    <div class="loader"><div class="spinner"></div> Loading unassigned entries…</div>
+  </div>
+
+  <script>
+    var t = TrelloPowerUp.iframe();
+    var state = { creds: null, card: null, projectId: null, entries: [] };
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      var d = new Date(iso + 'T00:00:00');
+      return d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    }
+
+    Promise.all([
+      t.get('member', 'private', 'harvestCredentials', null),
+      t.card('shortLink', 'name', 'url'),
+      t.get('board', 'shared', 'harvestProjectId', null)
+    ]).then(function(results) {
+      state.creds = results[0];
+      state.card = results[1];
+      state.projectId = results[2];
+
+      var container = document.getElementById('content');
+      if (!state.creds || !state.creds.token) {
+        container.innerHTML = '<div class="error">No Harvest credentials configured.</div>';
+        return;
+      }
+      if (!state.projectId) {
+        container.innerHTML = '<div class="error">No Harvest project assigned to this board.</div>';
+        return;
+      }
+
+      return HarvestAPI.requestAllPages('/time_entries', state.creds.token, state.creds.accountId,
+        { project_id: state.projectId }, 'time_entries').then(function(entries) {
+        state.entries = (entries || []).filter(function(e) {
+          return !e.external_reference || !e.external_reference.id;
+        }).sort(function(a, b) {
+          return (b.spent_date || '').localeCompare(a.spent_date || '');
+        });
+        render();
+      });
+    }).catch(function(err) {
+      document.getElementById('content').innerHTML = '<div class="error">Error: ' + escapeHtml(err.message) + '</div>';
+    });
+
+    function render() {
+      var container = document.getElementById('content');
+      if (state.entries.length === 0) {
+        container.innerHTML = '<div class="empty">No unassigned entries in this project. 🎉</div>';
+        return;
+      }
+
+      var html = '';
+      html += '<div class="intro">Select entries to attach to <strong>' + escapeHtml(state.card.name || 'this card') + '</strong>:</div>';
+      html += '<div class="toolbar">';
+      html += '<span class="count">' + state.entries.length + ' unassigned</span>';
+      html += '<a id="selectAll">Select all</a>';
+      html += '</div>';
+
+      html += '<div class="entry-list">';
+      state.entries.forEach(function(e) {
+        var notes = (e.notes || '').trim();
+        var notesHtml = notes ? escapeHtml(notes) : '<em style="color:#999">(no notes)</em>';
+        var task = e.task ? escapeHtml(e.task.name) : '';
+        html += '<label class="entry-row" data-entry-id="' + e.id + '">';
+        html += '<input type="checkbox" data-entry-id="' + e.id + '">';
+        html += '<span class="date">' + formatDate(e.spent_date) + '</span>';
+        html += '<div class="info"><div class="notes">' + notesHtml + '</div>';
+        if (task) html += '<div class="task">' + task + '</div>';
+        html += '</div>';
+        html += '<span class="hours">' + (e.rounded_hours || 0).toFixed(2) + 'h</span>';
+        html += '</label>';
+      });
+      html += '</div>';
+
+      html += '<div class="footer">';
+      html += '<span class="selection" id="selection">0 selected</span>';
+      html += '<div class="buttons">';
+      html += '<button class="cancel" id="cancelBtn">Cancel</button>';
+      html += '<button class="confirm" id="confirmBtn" disabled>Attach</button>';
+      html += '</div></div>';
+
+      container.innerHTML = html;
+      bindHandlers();
+    }
+
+    function bindHandlers() {
+      var checks = document.querySelectorAll('.entry-row input[type=checkbox]');
+      var selection = document.getElementById('selection');
+      var confirmBtn = document.getElementById('confirmBtn');
+
+      function update() {
+        var n = document.querySelectorAll('.entry-row input[type=checkbox]:checked').length;
+        selection.textContent = n + ' selected';
+        confirmBtn.disabled = n === 0;
+        confirmBtn.textContent = n > 0 ? 'Attach ' + n : 'Attach';
+        document.querySelectorAll('.entry-row').forEach(function(row) {
+          var cb = row.querySelector('input[type=checkbox]');
+          row.classList.toggle('checked', cb.checked);
+        });
+      }
+
+      checks.forEach(function(cb) { cb.addEventListener('change', update); });
+
+      document.getElementById('selectAll').addEventListener('click', function(e) {
+        e.preventDefault();
+        var allChecked = Array.prototype.every.call(checks, function(cb) { return cb.checked; });
+        checks.forEach(function(cb) { cb.checked = !allChecked; });
+        update();
+      });
+
+      document.getElementById('cancelBtn').addEventListener('click', function() {
+        t.closeModal();
+      });
+
+      confirmBtn.addEventListener('click', function() {
+        var ids = [];
+        document.querySelectorAll('.entry-row input[type=checkbox]:checked').forEach(function(cb) {
+          ids.push(cb.getAttribute('data-entry-id'));
+        });
+        if (ids.length === 0) return;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Attaching…';
+        var promises = ids.map(function(id) {
+          return HarvestAPI.setEntryExternalReference(
+            state.creds.token, state.creds.accountId, id, state.card.shortLink, state.card.url
+          );
+        });
+        Promise.all(promises).then(function() {
+          t.closeModal();
+        }).catch(function() {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Retry';
+          var existing = document.querySelector('.error');
+          if (existing) existing.remove();
+          var err = document.createElement('div');
+          err.className = 'error';
+          err.textContent = 'Some entries failed to attach. Please try again.';
+          document.getElementById('content').appendChild(err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>

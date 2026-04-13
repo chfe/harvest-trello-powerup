@@ -4,6 +4,44 @@ var BASE_URL = 'https://chfe.github.io/harvest-trello-powerup';
 var ICON_URL = BASE_URL + '/img/harvest-logo-orange.svg';
 var ICON_WHITE_URL = BASE_URL + '/img/harvest-logo-white.svg';
 
+function harvestActionMenu(t) {
+  return t.popup({
+    title: 'Harvest',
+    items: [
+      {
+        text: 'Log new time entry',
+        callback: function(t) {
+          return t.card('shortLink', 'name', 'url').then(function(card) {
+            var url = './entry-form.html?shortLink=' + encodeURIComponent(card.shortLink)
+              + '&cardName=' + encodeURIComponent(card.name || '')
+              + '&cardUrl=' + encodeURIComponent(card.url || '');
+            return t.modal({
+              title: 'New Time Entry',
+              url: url,
+              height: 500
+            });
+          });
+        }
+      },
+      {
+        text: 'Attach unassigned entries…',
+        callback: function(t) {
+          return t.card('shortLink', 'name', 'url').then(function(card) {
+            var url = './attach-entries.html?shortLink=' + encodeURIComponent(card.shortLink)
+              + '&cardName=' + encodeURIComponent(card.name || '')
+              + '&cardUrl=' + encodeURIComponent(card.url || '');
+            return t.modal({
+              title: 'Attach Unassigned Entries',
+              url: url,
+              height: 500
+            });
+          });
+        }
+      }
+    ]
+  });
+}
+
 TrelloPowerUp.initialize({
   'card-badges': function(t, opts) {
     return t.card('shortLink').then(function(card) {
@@ -58,18 +96,7 @@ TrelloPowerUp.initialize({
       return [{
         icon: ICON_URL,
         text: 'Log Time',
-        callback: function(t) {
-          return t.card('shortLink', 'name', 'url').then(function(card) {
-            var url = './entry-form.html?shortLink=' + encodeURIComponent(card.shortLink)
-              + '&cardName=' + encodeURIComponent(card.name || '')
-              + '&cardUrl=' + encodeURIComponent(card.url || '');
-            return t.modal({
-              title: 'New Time Entry',
-              url: url,
-              height: 500
-            });
-          });
-        }
+        callback: harvestActionMenu
       }];
     });
   },
@@ -87,18 +114,7 @@ TrelloPowerUp.initialize({
         },
         action: {
           text: 'Log Time',
-          callback: function(t) {
-            return t.card('shortLink', 'name', 'url').then(function(card) {
-              var url = './entry-form.html?shortLink=' + encodeURIComponent(card.shortLink)
-                + '&cardName=' + encodeURIComponent(card.name || '')
-                + '&cardUrl=' + encodeURIComponent(card.url || '');
-              return t.modal({
-                title: 'New Time Entry',
-                url: url,
-                height: 500,
-              });
-            });
-          }
+          callback: harvestActionMenu
         }
       };
     }).catch(function() { return []; });
