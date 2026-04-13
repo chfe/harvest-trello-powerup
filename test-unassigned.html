@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test: Unassigned Entries</title>
+  <link rel="stylesheet" href="https://p.trellocdn.com/power-up.css">
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 420px; margin: 20px auto; border: 1px solid #ccc; }
+    .test-banner { background: #0052cc; color: white; padding: 6px 12px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="test-banner">TEST HARNESS — stubs Trello + Harvest, loads real board-summary.js</div>
+  <div id="content">
+    <div class="loader"><div class="spinner"></div> Loading…</div>
+  </div>
+
+  <script>
+    // Fixture: Harvest project, entries, Trello cards
+    var FIXTURE_PROJECT = {
+      id: 123, name: 'Acme Redesign',
+      client: { name: 'Acme Corp' },
+      budget: 40, budget_by: 'project'
+    };
+    var FIXTURE_PROJECTS = [FIXTURE_PROJECT, { id: 456, name: 'Other Project', client: { name: 'Other Co' } }];
+
+    var FIXTURE_ENTRIES = [
+      // Assigned entries
+      { id: 1, spent_date: '2026-04-10', rounded_hours: 2.5, billable: true, billable_rate: 150, is_billed: false,
+        notes: 'Assigned work', task: { name: 'Development' },
+        external_reference: { id: 'AbCdEf12', permalink: 'https://trello.com/c/AbCdEf12' } },
+      { id: 2, spent_date: '2026-04-11', rounded_hours: 1.0, billable: true, billable_rate: 150, is_billed: true,
+        notes: 'Invoiced already', task: { name: 'Development' },
+        external_reference: { id: 'AbCdEf12' } },
+      // Unassigned entries
+      { id: 101, spent_date: '2026-04-12', rounded_hours: 0.75, billable: true, billable_rate: 150, is_billed: false,
+        notes: 'Client call re: onboarding questions', task: { name: 'Meeting' },
+        external_reference: null },
+      { id: 102, spent_date: '2026-04-13', rounded_hours: 0.25, billable: true, billable_rate: 150, is_billed: false,
+        notes: '', task: { name: 'Admin' },
+        external_reference: { id: '' } },
+      { id: 103, spent_date: '2026-04-13', rounded_hours: 1.5, billable: true, billable_rate: 150, is_billed: false,
+        notes: 'Quick bug investigation\nWith multi-line notes', task: { name: 'Development' },
+        external_reference: null },
+      { id: 104, spent_date: '2026-04-14', rounded_hours: 0.5, billable: false, billable_rate: 0, is_billed: false,
+        notes: 'Another call', task: { name: 'Meeting' },
+        external_reference: null }
+    ];
+
+    var FIXTURE_CARDS = [
+      { id: 'c1', name: 'Homepage redesign', shortLink: 'AbCdEf12', url: 'https://trello.com/c/AbCdEf12', closed: false },
+      { id: 'c2', name: 'Fix login bug', shortLink: 'GhIjKl34', url: 'https://trello.com/c/GhIjKl34', closed: false },
+      { id: 'c3', name: 'Archived card', shortLink: 'XxYyZz99', url: 'https://trello.com/c/XxYyZz99', closed: true },
+      { id: 'c4', name: 'Onboarding flow v2', shortLink: 'MnOpQr56', url: 'https://trello.com/c/MnOpQr56', closed: false }
+    ];
+
+    // Stub TrelloPowerUp.iframe()
+    var memberStore = {
+      harvestCredentials: { token: 'fake-token', accountId: 'fake-acct' },
+      trelloApiKey: 'fake-api-key'
+    };
+    var boardStore = {
+      harvestProjectId: '123',
+      badgeVisibility: 'full'
+    };
+
+    window.TrelloPowerUp = {
+      iframe: function() {
+        return {
+          get: function(scope, _vis, key, defaultVal) {
+            var store = scope === 'member' ? memberStore : boardStore;
+            return Promise.resolve(store.hasOwnProperty(key) ? store[key] : defaultVal);
+          },
+          set: function(scope, _vis, key, value) {
+            var store = scope === 'member' ? memberStore : boardStore;
+            store[key] = value;
+            return Promise.resolve();
+          },
+          cards: function() {
+            return Promise.resolve(FIXTURE_CARDS);
+          },
+          board: function() {
+            return Promise.resolve({ id: 'fake-board-id' });
+          }
+        };
+      }
+    };
+
+    // Stub HarvestAPI (defined before js/board-summary.js loads)
+    window.HarvestAPI = {
+      request: function(path) {
+        console.log('[stub] HarvestAPI.request', path);
+        if (path === '/projects') {
+          return Promise.resolve({ projects: FIXTURE_PROJECTS });
+        }
+        if (path === '/projects/123') {
+          return Promise.resolve(FIXTURE_PROJECT);
+        }
+        return Promise.resolve(null);
+      },
+      requestAllPages: function(path, _t, _a, params) {
+        console.log('[stub] HarvestAPI.requestAllPages', path, params);
+        if (path === '/time_entries') {
+          return Promise.resolve(FIXTURE_ENTRIES.slice());
+        }
+        return Promise.resolve([]);
+      },
+      updateEntry: function(_t, _a, id, data) {
+        console.log('[stub] HarvestAPI.updateEntry', id, data);
+        return Promise.resolve({ id: id, external_reference: data.external_reference });
+      },
+      setEntryExternalReference: function(token, accountId, entryId, shortLink, permalink) {
+        console.log('[stub] setEntryExternalReference', entryId, '→', shortLink);
+        // Simulate occasional failure for entry 103 to exercise error UI
+        if (String(entryId) === '999-fail') {
+          return Promise.reject(new Error('Simulated failure'));
+        }
+        return Promise.resolve({ id: entryId, external_reference: { id: shortLink, permalink: permalink } });
+      }
+    };
+
+    // Stub window.Trello (for create-card flow)
+    window.Trello = {
+      authorized: function() { return true; },
+      authorize: function(opts) { if (opts && opts.success) opts.success(); },
+      get: function(path) {
+        console.log('[stub] Trello.get', path);
+        if (path.indexOf('/lists') >= 0) {
+          return Promise.resolve([
+            { id: 'list-1', name: 'To Do', pos: 1 },
+            { id: 'list-2', name: 'Doing', pos: 2 }
+          ]);
+        }
+        return Promise.resolve([]);
+      },
+      post: function(path, data) {
+        console.log('[stub] Trello.post', path, data);
+        var shortLink = 'NEW' + Math.random().toString(36).slice(2, 8);
+        return Promise.resolve({
+          id: 'new-card-' + Date.now(),
+          name: data.name,
+          shortLink: shortLink,
+          shortUrl: 'https://trello.com/c/' + shortLink
+        });
+      }
+    };
+  </script>
+  <script src="js/board-summary.js"></script>
+</body>
+</html>

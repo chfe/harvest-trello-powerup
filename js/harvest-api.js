@@ -152,6 +152,16 @@ const HarvestAPI = {
     return res.json();
   },
 
+  async setEntryExternalReference(token, accountId, entryId, shortLink, permalink) {
+    return this.updateEntry(token, accountId, entryId, {
+      external_reference: { id: shortLink, permalink: permalink }
+    });
+  },
+
+  async clearEntryExternalReference(token, accountId, entryId) {
+    return this.updateEntry(token, accountId, entryId, { external_reference: null });
+  },
+
   async deleteEntry(token, accountId, entryId) {
     const res = await fetch(`${this.BASE_URL}/time_entries/${entryId}`, {
       method: 'DELETE',

@@ -53,6 +53,98 @@
 
     .empty-text { padding: 16px 12px; text-align: center; font-size: 13px; color: var(--ds-text-subtlest, #5e6c84); }
     .error { padding: 16px 12px; text-align: center; color: var(--ds-text-danger, #de350b); font-size: 13px; }
+
+    .unassigned-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 8px 12px; padding: 8px 10px;
+      background: var(--ds-background-warning, #fff7e6);
+      border: 1px solid var(--ds-border-warning, #ffc400);
+      border-radius: 6px; font-size: 13px;
+    }
+    .unassigned-banner .label { color: var(--ds-text-warning, #974f0c); font-weight: 600; }
+    .unassigned-banner button {
+      background: var(--ds-background-warning-bold, #ffab00); color: #172b4d;
+      border: none; border-radius: 3px; padding: 4px 10px; font-size: 12px; font-weight: 600;
+      cursor: pointer;
+    }
+    .unassigned-banner button:hover { filter: brightness(0.95); }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 8px 12px; font-size: 12px; color: var(--ds-text-subtle, #5e6c84);
+      cursor: pointer; background: none; border: none;
+    }
+    .back-link:hover { color: var(--ds-text, #172b4d); }
+
+    .entry-list { padding: 0 8px 60px 8px; }
+    .entry-row {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 8px; border-bottom: 1px solid var(--ds-border, #dfe1e6);
+      font-size: 12px;
+    }
+    .entry-row:last-child { border-bottom: none; }
+    .entry-row input[type=checkbox] { margin-top: 3px; flex-shrink: 0; }
+    .entry-row .meta { flex: 1; min-width: 0; }
+    .entry-row .meta-top { display: flex; gap: 6px; align-items: baseline; margin-bottom: 2px; }
+    .entry-row .date { color: var(--ds-text-subtlest, #5e6c84); font-size: 11px; }
+    .entry-row .hours { font-weight: 600; color: var(--ds-text, #172b4d); }
+    .entry-row .task { color: var(--ds-text-subtle, #5e6c84); font-size: 11px; }
+    .entry-row .notes { color: var(--ds-text, #172b4d); word-wrap: break-word; white-space: pre-wrap; }
+    .entry-row .actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    .entry-row .actions button {
+      background: var(--ds-background-neutral, #f4f5f7); color: var(--ds-text, #172b4d);
+      border: 1px solid var(--ds-border, #dfe1e6); border-radius: 3px;
+      padding: 3px 8px; font-size: 11px; cursor: pointer; white-space: nowrap;
+    }
+    .entry-row .actions button:hover { background: var(--ds-background-neutral-hovered, #ebecf0); }
+    .entry-row.error-row { background: var(--ds-background-danger, #ffebe6); }
+    .entry-row .row-error { color: var(--ds-text-danger, #de350b); font-size: 11px; margin-top: 2px; }
+
+    .attach-picker {
+      margin-top: 6px; padding: 6px; background: var(--ds-background-neutral, #f4f5f7);
+      border-radius: 4px; display: flex; gap: 4px;
+    }
+    .attach-picker input {
+      flex: 1; padding: 4px 6px; font-size: 12px;
+      border: 1px solid var(--ds-border-input, #dfe1e6); border-radius: 3px;
+      background: var(--ds-background-input, #fafbfc); color: var(--ds-text, #172b4d);
+    }
+    .attach-picker button {
+      padding: 4px 10px; font-size: 11px; background: var(--ds-background-brand-bold, #0052cc);
+      color: white; border: none; border-radius: 3px; cursor: pointer;
+    }
+    .attach-picker button:disabled { background: #a5adba; cursor: not-allowed; }
+
+    .selection-footer {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      background: var(--ds-background-default, #ffffff);
+      border-top: 1px solid var(--ds-border, #dfe1e6);
+      padding: 8px 12px; display: flex; gap: 6px; justify-content: space-between;
+      align-items: center; font-size: 12px;
+      box-shadow: 0 -2px 6px rgba(9, 30, 66, 0.08);
+    }
+    .selection-footer .count { color: var(--ds-text-subtle, #5e6c84); font-weight: 600; }
+    .selection-footer .buttons { display: flex; gap: 6px; }
+    .selection-footer button {
+      padding: 5px 10px; font-size: 12px; border-radius: 3px; border: none; cursor: pointer;
+    }
+    .selection-footer .attach-btn { background: var(--ds-background-brand-bold, #0052cc); color: white; }
+    .selection-footer .create-btn { background: var(--ds-background-success-bold, #36b37e); color: white; }
+
+    .inline-form { padding: 8px 12px; background: var(--ds-background-neutral, #f4f5f7); margin: 0 8px 8px; border-radius: 4px; }
+    .inline-form label { display: block; font-size: 11px; color: var(--ds-text-subtlest, #5e6c84); margin-bottom: 4px; }
+    .inline-form input {
+      width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 13px;
+      border: 1px solid var(--ds-border-input, #dfe1e6); border-radius: 3px;
+      background: var(--ds-background-input, #fafbfc); color: var(--ds-text, #172b4d);
+      margin-bottom: 6px;
+    }
+    .inline-form .row { display: flex; gap: 6px; }
+    .inline-form .row button {
+      padding: 5px 10px; font-size: 12px; border-radius: 3px; border: none; cursor: pointer;
+    }
+    .inline-form .primary { background: var(--ds-background-brand-bold, #0052cc); color: white; }
+    .inline-form .secondary { background: var(--ds-background-neutral, #f4f5f7); color: var(--ds-text, #172b4d); border: 1px solid var(--ds-border, #dfe1e6); }
   </style>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
   <script src="js/harvest-api.js"></script>
@@ -62,166 +154,6 @@
     <div class="loader"><div class="spinner"></div> Loading…</div>
   </div>
 
-  <script>
-    var t = TrelloPowerUp.iframe();
-
-    function formatCHF(amount) {
-      var parts = amount.toFixed(2).split('.');
-      var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, "'");
-      return "CHF " + intPart + '.' + parts[1];
-    }
-
-    function escapeHtml(str) {
-      var div = document.createElement('div');
-      div.textContent = str || '';
-      return div.innerHTML;
-    }
-
-    Promise.all([
-      t.get('member', 'private', 'harvestCredentials', null),
-      t.get('board', 'shared', 'harvestProjectId', null),
-      t.get('board', 'shared', 'badgeVisibility', 'full')
-    ]).then(function(results) {
-      var creds = results[0];
-      var projectId = results[1];
-      var visibility = results[2];
-      var container = document.getElementById('content');
-
-      if (!creds || !creds.token) {
-        container.innerHTML = '<div class="empty-text">No Harvest credentials configured.<br>Use "Authorize Account" in the Power-Up menu.</div>';
-        return;
-      }
-
-      // Load projects for dropdown
-      HarvestAPI.request('/projects', creds.token, creds.accountId, { is_active: true, per_page: 100 }).then(function(projData) {
-        var projects = (projData && projData.projects) ? projData.projects.slice().sort(function(a, b) {
-          var aName = (a.client ? a.client.name + ' — ' + a.name : a.name).toLowerCase();
-          var bName = (b.client ? b.client.name + ' — ' + b.name : b.name).toLowerCase();
-          return aName.localeCompare(bName, 'de');
-        }) : [];
-
-        var html = '';
-
-        // Board Settings
-        html += '<div class="section">';
-        html += '<div class="section-title">Board Project</div>';
-        html += '<select id="projectId">';
-        html += '<option value="">— none —</option>';
-        projects.forEach(function(p) {
-          var label = p.client ? escapeHtml(p.client.name) + ' — ' + escapeHtml(p.name) : escapeHtml(p.name);
-          var sel = (projectId && String(p.id) === String(projectId)) ? ' selected' : '';
-          html += '<option value="' + p.id + '"' + sel + '>' + label + '</option>';
-        });
-        html += '</select>';
-        html += '<div class="section-title">Card Badge</div>';
-        html += '<select id="visibility">';
-        html += '<option value="full"' + (visibility === 'full' ? ' selected' : '') + '>Show hours (e.g. 2.5h)</option>';
-        html += '<option value="minimal"' + (visibility === 'minimal' ? ' selected' : '') + '>Show only ✓ tracked</option>';
-        html += '<option value="hidden"' + (visibility === 'hidden' ? ' selected' : '') + '>Hidden</option>';
-        html += '</select>';
-        html += '</div>';
-
-        html += '<div class="divider"></div>';
-        html += '<div id="summary"></div>';
-
-        container.innerHTML = html;
-
-        // Auto-save on change
-        document.getElementById('projectId').addEventListener('change', saveAndReload);
-        document.getElementById('visibility').addEventListener('change', saveAndReload);
-
-        // Load summary if project is set
-        if (projectId) loadSummary(creds, projectId, projects);
-        else document.getElementById('summary').innerHTML = '<div class="empty-text">Select a project to see totals.</div>';
-      });
-
-      function saveAndReload() {
-        var newProjectId = document.getElementById('projectId').value;
-        var newVisibility = document.getElementById('visibility').value;
-        Promise.all([
-          t.set('board', 'shared', 'harvestProjectId', newProjectId || null),
-          t.set('board', 'shared', 'badgeVisibility', newVisibility)
-        ]).then(function() {
-          if (newProjectId) {
-            document.getElementById('summary').innerHTML = '<div class="loader"><div class="spinner"></div></div>';
-            HarvestAPI.request('/projects', creds.token, creds.accountId, { is_active: true, per_page: 100 }).then(function(projData) {
-              var projects = (projData && projData.projects) ? projData.projects : [];
-              loadSummary(creds, newProjectId, projects);
-            });
-          } else {
-            document.getElementById('summary').innerHTML = '<div class="empty-text">Select a project to see totals.</div>';
-          }
-        });
-      }
-
-      function loadSummary(creds, pid, projects) {
-        Promise.all([
-          HarvestAPI.request('/projects/' + pid, creds.token, creds.accountId),
-          HarvestAPI.requestAllPages('/time_entries', creds.token, creds.accountId, { project_id: pid }, 'time_entries')
-        ]).then(function(data) {
-          var project = data[0];
-          var entries = data[1] || [];
-          var summaryEl = document.getElementById('summary');
-
-          if (!project) {
-            summaryEl.innerHTML = '<div class="error">Could not load project.</div>';
-            return;
-          }
-
-          var totalH = 0, billH = 0, nonBillH = 0, invoicedH = 0, uninvoicedH = 0;
-          var uninvoicedAmount = 0;
-          entries.forEach(function(e) {
-            var h = e.rounded_hours || 0;
-            var rate = e.billable_rate || 0;
-            totalH += h;
-            if (e.billable && e.billable_rate > 0) billH += h; else nonBillH += h;
-            if (e.is_billed) { invoicedH += h; }
-            else { uninvoicedH += h; uninvoicedAmount += h * rate; }
-          });
-
-          var clientName = project.client ? escapeHtml(project.client.name) : '';
-          var projectName = escapeHtml(project.name);
-
-          var html = '';
-          html += '<div class="header">';
-          html += '<img src="./img/harvest-logo-orange.svg" alt="">';
-          html += '<div>';
-          if (clientName) html += '<div class="client-name">' + clientName + '</div>';
-          html += '<div class="project-name">' + projectName + '</div>';
-          html += '</div></div>';
-
-          html += '<div class="stats">';
-          html += '<div class="stat-card unbilled"><div class="value">' + uninvoicedH.toFixed(1) + 'h</div><div class="label">Unbilled</div></div>';
-          html += '<div class="stat-card amount"><div class="value">' + formatCHF(uninvoicedAmount) + '</div><div class="label">Unbilled Amount</div></div>';
-          html += '<div class="stat-card invoiced"><div class="value">' + invoicedH.toFixed(1) + 'h</div><div class="label">Invoiced</div></div>';
-          html += '<div class="stat-card total"><div class="value">' + totalH.toFixed(1) + 'h</div><div class="label">Total</div></div>';
-          html += '</div>';
-
-          html += '<div class="divider"></div>';
-          html += '<div class="breakdown">';
-          html += '<div class="breakdown-row"><span class="label">Billable</span><span class="value">' + billH.toFixed(1) + 'h</span></div>';
-          if (nonBillH > 0) {
-            html += '<div class="breakdown-row"><span class="label">Non-billable</span><span class="value">' + nonBillH.toFixed(1) + 'h</span></div>';
-          }
-          html += '<div class="breakdown-row"><span class="label">Time entries</span><span class="value">' + entries.length + '</span></div>';
-          if (project.budget) {
-            var budgetType = project.budget_by === 'project' ? 'h' : '';
-            html += '<div class="breakdown-row"><span class="label">Budget</span><span class="value">' + project.budget + budgetType + '</span></div>';
-            if (project.budget_by === 'project') {
-              var pct = Math.round((totalH / project.budget) * 100);
-              html += '<div class="breakdown-row"><span class="label">Used</span><span class="value">' + pct + '%</span></div>';
-            }
-          }
-          html += '</div>';
-
-          summaryEl.innerHTML = html;
-        }).catch(function() {
-          document.getElementById('summary').innerHTML = '<div class="error">Could not load Harvest data.</div>';
-        });
-      }
-    }).catch(function(err) {
-      document.getElementById('content').innerHTML = '<div class="error">Error: ' + escapeHtml(err.message) + '</div>';
-    });
-  </script>
+  <script src="js/board-summary.js"></script>
 </body>
 </html>
